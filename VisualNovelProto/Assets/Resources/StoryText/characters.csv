@@ -1,0 +1,4 @@
+id,name,colorHex,desc,thumb,group,ability1Name,ability1Desc,penaltyName,penaltyDesc
+0,공인주,#A8D8FF,학생,,무슨학교,시간되감기,원하는 시간대로 이동한다.,시간제약,되돌아간 시간의 두배 동안은 능력을 사용하지 못한다.
+1,쿠 훌린,#5DA0FF,랜서 서번트,thumb_lancer,성배전쟁,게볼그,인과를 거슬러 심장을 꿰뚫는다,마나소모,루틴 스킬 사용 시 마나 과소모
+2,모로 엘로이,#A8D8FF,기억전송자,thumb_moro,연구소,회귀성 기억전송,사망 직전 기억을 이전 상태로 전송,기억붕괴,과도한 전송 시 기억 손실 위험

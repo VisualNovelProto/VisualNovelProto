@@ -1,0 +1,26 @@
+# Start
+@lang ko
+@set player = "준우"
+@set score = 1
+@back city_sunset fade:0.5
+@char KANA show at:left fade:0.3
+KANA: "안녕, {player}! NaniPro 데모에 온 걸 환영해."
+
+"테스트중입니다."
+
+@set info = "선택해볼래?"
+" {info} "
+
+* "왼쪽으로 간다" -> Left if score >= 1
+* "오른쪽으로 간다" -> Right
+
+# Left
+"왼쪽을 택했다."
+@goto End
+
+# Right
+"오른쪽을 택했다."
+@goto End
+
+# End
+KANA: "데모 끝! 저장/불러오기도 준비돼 있어."

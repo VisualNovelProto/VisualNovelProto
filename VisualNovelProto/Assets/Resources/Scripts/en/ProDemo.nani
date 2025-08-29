@@ -1,0 +1,23 @@
+# Start
+@lang en
+@set player = "Player"
+@set score = 2
+@back city_sunset fade:0.5
+@char KANA show at:left fade:0.3
+KANA: "Hello, {player}! Welcome to NaniPro."
+
+"Make a choice."
+
+* "Go left" -> Left if score >= 1
+* "Go right" -> Right
+
+# Left
+"You chose left."
+@goto End
+
+# Right
+"You chose right."
+@goto End
+
+# End
+KANA: "Demo over!"
