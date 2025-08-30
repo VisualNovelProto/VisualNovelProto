@@ -30,6 +30,9 @@ public sealed class PauseMenu : MonoBehaviour
 
     bool paused;
 
+    public void OnClickSaveSlot1() { SaveLoadManager.Instance?.Save(1); }
+    public void OnClickLoadSlot1() { SaveLoadManager.Instance?.Load(1, jumpToNode: true); }
+
     void Awake()
     {
         if (rootPanel != null) rootPanel.SetActive(false);

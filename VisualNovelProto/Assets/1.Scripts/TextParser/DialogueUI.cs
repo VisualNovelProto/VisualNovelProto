@@ -180,6 +180,12 @@ public sealed class DialogueUI : MonoBehaviour
                 lastCgKey = cgKey;
             }
         }
+        //소리(BGM,SFX)
+        if (!string.IsNullOrEmpty(node.bgm) && AudioManager.Instance != null)
+            AudioManager.Instance.PlayBgm(node.bgm);
+
+        if (!string.IsNullOrEmpty(node.sfx) && AudioManager.Instance != null)
+            AudioManager.Instance.PlaySfx(node.sfx);
 
         HideAllChoices();
         ShowContinueHint(true);
@@ -396,7 +402,6 @@ public sealed class DialogueUI : MonoBehaviour
             // 현재 상태
             ref ActorState st = ref curActor[si];
 
-            // 바뀐 게 없다면(키/flipX/z 모두 동일) 건너뜀
             bool sameKey = string.Equals(st.key ?? "", cmd.key ?? "", StringComparison.Ordinal);
             bool sameFlip = st.flipX == cmd.flipX;
             bool sameZ = st.z == cmd.z;
@@ -405,28 +410,29 @@ public sealed class DialogueUI : MonoBehaviour
             if (noChange)
                 continue;
 
-            // 스프라이트 찾기(키가 비면 비활성)
             Sprite spr = string.IsNullOrEmpty(cmd.key) ? null : FindSprite(portraitBindings, cmd.key);
 
-            // 슬롯/앵커 선택
             Image slot = PickSlot(cmd.pos);
             RectTransform anchor = PickAnchor(cmd.pos);
-            if (!slot || !anchor)
-                continue;
+            if (!slot || !anchor) continue;
 
-            // 부모/정렬/플립/위치 세팅
+            // 부모/정렬/플립
             var rt = slot.rectTransform;
             rt.SetParent(anchor, false);
             rt.SetSiblingIndex(Mathf.Clamp(cmd.z, 0, 10));
             rt.localScale = new Vector3(cmd.flipX ? -1f : 1f, 1f, 1f);
 
-            // 스프라이트가 바뀌면 교체
+            // ★ 커스텀 좌표(Pos=='X') 적용 (기존 0,0만 쓰던 문제 수정)
+            if (char.ToUpperInvariant(cmd.pos) == 'X') rt.anchoredPosition = cmd.xy;
+            else rt.anchoredPosition = Vector2.zero;
+
+            // 스프라이트 갱신
             slot.sprite = spr;
             slot.gameObject.SetActive(spr != null);
 
-            // 트랜지션은 "내용이 바뀔 때만" 실행
-            StopActorCo(); // 기존 코루틴 정리(해당 슬롯만 정리하고 싶으면 분리해도 됨)
-            TransitionManager.PlayActorIn(slot,cmd.pos,string.IsNullOrEmpty(cmd.inFx)?"fade":cmd.inFx,(cmd.time<=0?actorDefaultInTime:cmd.time),cmd.flipX);
+            // 내용이 바뀔 때만 트랜지션
+            if (spr != null)
+                TransitionManager.PlayActorIn(slot, cmd.pos, string.IsNullOrEmpty(cmd.inFx) ? "fade" : cmd.inFx, (cmd.time <= 0 ? actorDefaultInTime : cmd.time), cmd.flipX);
 
             // 상태 갱신
             st.active = spr != null;
@@ -437,7 +443,7 @@ public sealed class DialogueUI : MonoBehaviour
             st.sprite = spr;
         }
 
-        // 3) 명령에 없는 슬롯은 숨김(이번 컷씬에서 내려야 하는 배우)
+        // 3) 명령에 없는 슬롯은 숨김
         for (int si = 0; si < 3; si++)
         {
             if (!desired[si] && curActor[si].active)

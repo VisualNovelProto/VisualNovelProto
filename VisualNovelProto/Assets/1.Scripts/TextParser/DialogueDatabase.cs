@@ -24,7 +24,7 @@ public sealed class DialogueDatabase : ScriptableObject
     public const string CsvHeaderNew =
         "Index,nodeId,rowType,speaker,text,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq";
 
-    public static DialogueDatabase LoadFromResources(string path = "Story/main")
+    public static DialogueDatabase LoadFromResources(string path = "StoryText/main")
     {
         TextAsset csv = Resources.Load<TextAsset>(path);
         if (csv == null) throw new Exception($"CSV not found: Resources/{path}.csv");

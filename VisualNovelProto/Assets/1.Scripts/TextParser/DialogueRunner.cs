@@ -21,6 +21,20 @@ public sealed class DialogueRunner : MonoBehaviour
     DialogueNode current;
     bool hasCurrent;
 
+    // DialogueRunner.cs 내부 어딘가에 추가 (public)
+    public int GetCurrentNodeId() => hasCurrent ? current.nodeId : -1;
+
+    public bool HasFlag(int id) => flags.Has(id);
+    public void SetFlag(int id) => flags.Set(id);
+    public void ClearAllFlags() => flags.Clear();
+
+    // 저장된 노드로 바로 이동 (UI 업데이트 포함)
+    public void JumpToNode(int nodeId)
+    {
+        if (nodeId < 0) return;
+        EnterNode(nodeId);
+    }
+
     void Awake()
     {
         db = ScriptableObject.CreateInstance<DialogueDatabase>();

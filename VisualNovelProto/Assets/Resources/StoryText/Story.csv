@@ -1,7 +1,7 @@
 Index,nodeId,rowType,speaker,text,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq
-FirstMeet,0,Node,Player,여기가… 시작 화면인가?,"MovLight@C(in=fade,t=0.2)",bgm_title,,test1,,,1,,,,,
-FirstMeet,1,Node,가이드,환영합니다. 새로 시작하시겠어요?,MovLin@L(in=slide); MovLight@C(in=pop),bgm_lobby,,test2,,,2,,,,,
-Lobby,2,Node,가이드,로비입니다. 라이브러리나 설정을 열 수 있어요.,"MovLin@L(in=slide); MovLight@C(in=pop);MovLight@R(in=fade,t=2,flipx)",bgm_lobby,,test3,,,3,,,,,
+FirstMeet,0,Node,Player,백그라운드 화면 CG Transion 테스트입니다.,,bgm_title,,test1,"fade_in(t=1,delay=0.5)",,1,,,,,
+FirstMeet,1,Node,가이드,환영합니다. 새로 시작하시겠어요?,MovLin@L(in=slide); MovLight@C(in=pop),bgm_lobby,,test2,"fade_out(t=0.4);fade_in(t=0.3,delay=0.4)",,2,,,,,
+Lobby,2,Node,가이드,로비입니다. 라이브러리나 설정을 열 수 있어요.,"MovLin@L(in=slide); MovLight@C(in=pop);MovLight@R(in=fade,t=2,flipx)",bgm_lobby,,test3,"shake(t=0.25,amp=18)",,3,,,,,
 StartGame,3,Node,주인공,"그럼, 모험을 시작해볼까?","MovLin@L; MovLight@C;MovLight@R(in=fade,t=2)",bgm_field,,test4,,,4,,,,1,
 Fork,4,Node,동료,"왼쪽 길과 오른쪽 길, 어디로 갈까?",MovLin@L; MovLight@C;MovLight@R(flipx),,,test5,,,-1,,,,,
 Fork,4-1,Choice,,,,,,,,,,왼쪽 길,10,,,

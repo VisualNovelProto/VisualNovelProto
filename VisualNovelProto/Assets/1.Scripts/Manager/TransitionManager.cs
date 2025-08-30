@@ -5,13 +5,32 @@ using UnityEngine.UI;
 /// <summary>
 /// 화면(배경) 트랜지션 + 캐릭터(초상) 트랜지션을 한 곳에서 관리.
 /// - 동적 생성/코루틴 없음. 고정 크기 풀에서 갱신(Update)만 돌림.
-/// - CSV node.transition 의 스펙 예:
+/// - CSV node.transition 예:
 ///   "fade_out(t=0.4);fade_in(t=0.3,delay=0.4)"
-///   "blackout" / "shake(t=0.3,amp=18)" 등
+///   "blackout" / "shake(t=0.3,amp=18)"
+///   "mask(name=left_to_right; time=0.6; invert=0; soft=0.02; color=#000000)"
 /// - 캐릭터 연출은 DialogueUI에서 TransitionManager.PlayActorIn(...) 호출.
 /// </summary>
 public sealed class TransitionManager : MonoBehaviour
 {
+    // ===== Mask Wipe =====
+    [Header("Mask Wipe")]
+    public RawImage maskOverlay;                 // Canvas 전체 RawImage(레이캐스트 OFF)
+    public Material maskMaterialTemplate;        // "UI/GrayscaleMaskWipe" 셰이더 머티리얼
+    public string maskResourcesFolder = "TransitionMasks";
+
+    Material _maskMat;
+    Texture _maskTex;
+
+    struct MaskTask
+    {
+        public bool active;
+        public float t, dur, delay;
+        public RawImage overlay;
+        public Material mat;
+    }
+    MaskTask mask; // 동시에 하나만 재생한다고 가정
+
     public static bool IsPlaying => _activeCount > 0;
     static TransitionManager _i;
     static int _activeCount;
@@ -38,16 +57,17 @@ public sealed class TransitionManager : MonoBehaviour
     void Awake()
     {
         _i = this;
-        // 초기 클리어
         for (int i = 0; i < MaxFade; i++) fades[i].active = false;
         for (int i = 0; i < MaxShake; i++) shakes[i].active = false;
         for (int i = 0; i < MaxActor; i++) actors[i].active = false;
+        mask.active = false;
 
         if (fadeOverlay != null)
         {
             var c = fadeOverlay.color; c.a = 0f; fadeOverlay.color = c;
-            fadeOverlay.gameObject.SetActive(true); // 항상 켜두되 알파만 0
+            fadeOverlay.gameObject.SetActive(true); // 항상 켜두되 알파 0
         }
+        if (maskOverlay != null) maskOverlay.gameObject.SetActive(false);
     }
 
     void Update()
@@ -60,13 +80,13 @@ public sealed class TransitionManager : MonoBehaviour
             if (fades[i].active)
             {
                 alive++;
-                var t = fades[i];
-                t.t += dt;
-                float a = Mathf.Clamp01((t.t - t.delay) / Mathf.Max(0.0001f, t.dur));
-                float v = Mathf.Lerp(t.from, t.to, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(a)));
-                if (t.overlay) { var c = t.overlay.color; c.a = v; t.overlay.color = c; }
-                if (t.t >= t.delay + t.dur) t.active = false;
-                fades[i] = t;
+                var tsk = fades[i];
+                tsk.t += dt;
+                float a = Mathf.Clamp01((tsk.t - tsk.delay) / Mathf.Max(0.0001f, tsk.dur));
+                float v = Mathf.Lerp(tsk.from, tsk.to, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(a)));
+                if (tsk.overlay) { var c = tsk.overlay.color; c.a = v; tsk.overlay.color = c; }
+                if (tsk.t >= tsk.delay + tsk.dur) tsk.active = false;
+                fades[i] = tsk;
             }
 
         // Shake
@@ -125,7 +145,6 @@ public sealed class TransitionManager : MonoBehaviour
 
                 if (a.t >= a.delay + a.dur)
                 {
-                    // 종료 고정
                     if (a.img)
                     {
                         var c = a.img.color; c.a = a.toA; a.img.color = c;
@@ -140,6 +159,20 @@ public sealed class TransitionManager : MonoBehaviour
                 actors[i] = a;
             }
 
+        // Mask
+        if (mask.active)
+        {
+            alive++;
+            mask.t += dt;
+            float a = Mathf.Clamp01((mask.t - mask.delay) / Mathf.Max(0.0001f, mask.dur));
+            if (mask.mat != null) mask.mat.SetFloat("_Cutoff", a);
+            if (mask.t >= mask.delay + mask.dur)
+            {
+                if (mask.overlay) mask.overlay.gameObject.SetActive(false);
+                mask.active = false;
+            }
+        }
+
         _activeCount = alive;
     }
 
@@ -147,13 +180,12 @@ public sealed class TransitionManager : MonoBehaviour
 
     /// <summary>
     /// CSV node.transition 문자열을 파싱해서 여러 트랜지션을 등록.
-    /// 예) "fade_out(t=0.4);fade_in(t=0.3,delay=0.4);shake(t=0.25,amp=14)"
+    /// 예) "fade_out(t=0.4);fade_in(t=0.3,delay=0.4);shake(t=0.25,amp=14);mask(name=left_to_right)"
     /// </summary>
     public static void Play(string spec)
     {
         if (_i == null || string.IsNullOrWhiteSpace(spec)) return;
 
-        // ';'로 구분된 여러 개 처리
         var parts = spec.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < parts.Length; i++)
             ParseAndEnqueue(parts[i].Trim());
@@ -173,6 +205,8 @@ public sealed class TransitionManager : MonoBehaviour
         }
 
         float t = _i.defaultFadeTime, delay = 0f, amp = _i.defaultShakeAmp;
+        string mName = null; bool invert = false; float soft = 0.02f; Color mColor = Color.black;
+
         if (!string.IsNullOrEmpty(args))
         {
             var kv = args.Split(',');
@@ -183,6 +217,14 @@ public sealed class TransitionManager : MonoBehaviour
                 else if (s.StartsWith("time=", StringComparison.OrdinalIgnoreCase) && float.TryParse(s.Substring(5), out v)) t = Mathf.Max(0f, v);
                 else if (s.StartsWith("delay=", StringComparison.OrdinalIgnoreCase) && float.TryParse(s.Substring(6), out v)) delay = Mathf.Max(0f, v);
                 else if (s.StartsWith("amp=", StringComparison.OrdinalIgnoreCase) && float.TryParse(s.Substring(4), out v)) amp = Mathf.Max(0f, v);
+                else if (s.StartsWith("name=", StringComparison.OrdinalIgnoreCase)) mName = s.Substring(5).Trim();
+                else if (s.StartsWith("invert=", StringComparison.OrdinalIgnoreCase)) invert = s.EndsWith("1", StringComparison.OrdinalIgnoreCase) || s.EndsWith("true", StringComparison.OrdinalIgnoreCase);
+                else if (s.StartsWith("soft=", StringComparison.OrdinalIgnoreCase) && float.TryParse(s.Substring(5), out v)) soft = Mathf.Clamp01(v);
+                else if (s.StartsWith("color=", StringComparison.OrdinalIgnoreCase))
+                {
+                    var hex = s.Substring(6).Trim();
+                    ColorUtility.TryParseHtmlString(hex, out mColor);
+                }
             }
         }
 
@@ -191,6 +233,7 @@ public sealed class TransitionManager : MonoBehaviour
         else if (name.Equals("blackout", StringComparison.OrdinalIgnoreCase)) EnqueueFade(0f, 1f, 0f, 0f);
         else if (name.Equals("clearout", StringComparison.OrdinalIgnoreCase)) EnqueueFade(1f, 0f, 0f, 0f);
         else if (name.Equals("shake", StringComparison.OrdinalIgnoreCase)) EnqueueShake(t, amp, delay);
+        else if (name.Equals("mask", StringComparison.OrdinalIgnoreCase)) EnqueueMask(mName, t, delay, invert, soft, mColor);
         // 필요 시 추가: flash, blur 등
     }
 
@@ -238,13 +281,42 @@ public sealed class TransitionManager : MonoBehaviour
             }
     }
 
+    static void EnqueueMask(string name, float time, float delay, bool invert, float soft, Color color)
+    {
+        if (_i == null || _i.maskOverlay == null || _i.maskMaterialTemplate == null || string.IsNullOrEmpty(name)) return;
+
+        // 리소스 로드
+        string path = string.IsNullOrEmpty(_i.maskResourcesFolder) ? name : (_i.maskResourcesFolder + "/" + name);
+        _i._maskTex = Resources.Load<Texture2D>(path);
+        if (_i._maskTex == null) { Debug.LogWarning($"TransitionManager: mask texture not found: Resources/{path}"); return; }
+
+        if (_i._maskMat == null) _i._maskMat = new Material(_i.maskMaterialTemplate);
+        _i._maskMat.SetTexture("_MaskTex", _i._maskTex);
+        _i._maskMat.SetFloat("_Invert", invert ? 1f : 0f);
+        _i._maskMat.SetFloat("_Cutoff", 0f);
+        _i._maskMat.SetFloat("_Softness", Mathf.Clamp01(soft));
+        _i._maskMat.SetColor("_Color", color);
+
+        _i.maskOverlay.material = _i._maskMat;
+        _i.maskOverlay.texture = _i._maskTex;
+        _i.maskOverlay.gameObject.SetActive(true);
+
+        _i.mask = new MaskTask
+        {
+            active = true,
+            t = 0f,
+            dur = Mathf.Max(0.0001f, time),
+            delay = Mathf.Max(0f, delay),
+            overlay = _i.maskOverlay,
+            mat = _i._maskMat
+        };
+    }
+
     // ===== Public API: Actor(초상) =====
 
     /// <summary>
-    /// 캐릭터 입장 연출을 매니저로 수행. (기존 코루틴 대체)
-    /// effect: "fade" | "pop" | "slide"
-    /// posHint: 'L' 'C' 'R' → slide 시작 방향 결정. ('X'면 아래에서 올라오도록 처리)
-    /// time≤0이면 defaultFadeTime 사용.
+    /// 캐릭터 입장 연출. effect: "fade" | "pop" | "slide"
+    /// posHint: 'L','C','R' → slide 시작 방향 추정. ('X'면 아래에서 올라오기)
     /// </summary>
     public static void PlayActorIn(Image img, char posHint, string effect, float time, bool flipX)
     {
@@ -260,7 +332,6 @@ public sealed class TransitionManager : MonoBehaviour
             else if (effect.Equals("slide", StringComparison.OrdinalIgnoreCase)) mode = ActorMode.Slide;
         }
 
-        // 시작/끝 상태 구성
         var task = new ActorTask
         {
             active = true,
@@ -269,16 +340,14 @@ public sealed class TransitionManager : MonoBehaviour
             mode = mode,
             dur = t,
             delay = 0f,
-            easing = Easing.Smooth // 기본 이징
+            easing = Easing.Smooth
         };
 
-        // 공통: flipX는 rt.localScale.x에 반영되어 있다고 가정
         if (mode == ActorMode.Fade)
         {
             task.fromA = 0f; task.toA = 1f;
             task.fromScale = rt.localScale; task.toScale = rt.localScale;
             task.fromPos = rt.anchoredPosition; task.toPos = rt.anchoredPosition;
-            // 시작 알파 0으로 보정
             var c = img.color; c.a = 0f; img.color = c;
         }
         else if (mode == ActorMode.Pop)
@@ -288,7 +357,7 @@ public sealed class TransitionManager : MonoBehaviour
             task.fromA = 0f; task.toA = 1f;
             task.fromScale = new Vector3(sx * 1.2f, 1.2f, 1f);
             task.toScale = new Vector3(sx, 1f, 1f);
-            task.fromPos = task.toPos = Vector2.zero; // 로컬 유지
+            task.fromPos = task.toPos = rt.anchoredPosition;
             var c = img.color; c.a = 0f; img.color = c;
             rt.localScale = task.fromScale;
         }
@@ -304,12 +373,11 @@ public sealed class TransitionManager : MonoBehaviour
             }
             task.fromA = 1f; task.toA = 1f;
             task.fromScale = rt.localScale; task.toScale = rt.localScale;
-            task.toPos = Vector2.zero;
+            task.toPos = rt.anchoredPosition;
             task.fromPos = task.toPos + offv;
             rt.anchoredPosition = task.fromPos;
         }
 
-        // 빈 슬롯 찾기
         for (int i = 0; i < MaxActor; i++)
             if (!_i.actors[i].active)
             {
@@ -324,13 +392,21 @@ public sealed class TransitionManager : MonoBehaviour
         if (_i == null) return;
 
         for (int i = 0; i < MaxFade; i++) _i.fades[i].active = false;
+
         for (int i = 0; i < MaxShake; i++)
         {
             if (_i.shakes[i].active && _i.shakes[i].target)
                 _i.shakes[i].target.anchoredPosition = _i.shakes[i].basePos;
             _i.shakes[i].active = false;
         }
+
         for (int i = 0; i < MaxActor; i++) _i.actors[i].active = false;
+
+        if (_i.mask.active)
+        {
+            _i.mask.active = false;
+            if (_i.mask.overlay) _i.mask.overlay.gameObject.SetActive(false);
+        }
 
         _activeCount = 0;
     }
@@ -383,7 +459,6 @@ public sealed class TransitionManager : MonoBehaviour
 
     static float HashNoise(int seed)
     {
-        // 0~1 범위의 해시성 노이즈
         unchecked
         {
             uint x = (uint)seed;
