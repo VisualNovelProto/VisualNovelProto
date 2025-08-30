@@ -25,8 +25,8 @@ public sealed class GameRoot : MonoBehaviour
         dataManager = dataManager ?? GetComponent<DataManager>() ?? gameObject.AddComponent<DataManager>();
 
         // 상호 참조(필요한 것만)
-        if (saveLoad.ui == null) saveLoad.ui = FindFirstObjectByType<DialogueUI>();
-        if (saveLoad.runner == null) saveLoad.runner = FindFirstObjectByType<DialogueRunner>();
+        if (saveLoad.ui == null) saveLoad.ui = FindObjectOfType<DialogueUI>();
+        if (saveLoad.runner == null) saveLoad.runner = FindObjectOfType<DialogueRunner>();
 
         // 설정 로드 & 적용
         settings.Load();     // 파일 없으면 기본값 생성
@@ -44,8 +44,8 @@ public sealed class GameRoot : MonoBehaviour
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         // 씬 바뀔 때 인게임 오브젝트를 새로 찾고 필요한 참조 주입
-        if (saveLoad.ui == null) saveLoad.ui = FindFirstObjectByType<DialogueUI>();
-        if (saveLoad.runner == null) saveLoad.runner = FindFirstObjectByType<DialogueRunner>();
+        if (saveLoad.ui == null) saveLoad.ui = FindObjectOfType<DialogueUI>();
+        if (saveLoad.runner == null) saveLoad.runner = FindObjectOfType<DialogueRunner>();
 
         // 새 씬에서 옵션 즉시 재적용(특히 해상도/캔버스 스케일, 타이핑 등)
         settings.ApplyAll();
