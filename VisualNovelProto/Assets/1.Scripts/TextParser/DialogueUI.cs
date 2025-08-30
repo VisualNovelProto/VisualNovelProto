@@ -23,6 +23,10 @@ public sealed class DialogueUI : MonoBehaviour
         public string key;
         public Sprite sprite;
     }
+    //게터
+    public bool IsTypingPublic => isTyping;
+    public bool IsAwaitingChoicePublic => awaitingChoice;
+    public int CurrentBodyLengthPublic => bodyText ? bodyText.textInfo.characterCount : 0;
 
     [Header("Auto Unlock")]
     public bool autoUnlockGlossaryOnAppear = true;
@@ -93,7 +97,7 @@ public sealed class DialogueUI : MonoBehaviour
     TypingSpeed currentSpeed;
 
     ActorState[] curActor = new ActorState[3]; // L=0, C=1, R=2
-    string lastCgKey;                           // CG 키 캐시
+    string lastCgKey;                          // CG 키 캐시
 
     void Awake()
     {
@@ -161,8 +165,14 @@ public sealed class DialogueUI : MonoBehaviour
         if (glossary != null) shown = GlossaryHighlighter.InjectLinks(shown, glossary);
         if (characters != null) shown = CharacterHighlighter.InjectLinks(shown, characters);
 
-        SetBodyTextForTyping(shown);   // ★ 원문(node.text)로 덮어쓰지 않음
-
+        SetBodyTextForTyping(shown);   //원문(node.text)로 덮어쓰지 않음
+        if (ChatLogManager.Instance != null)
+        {
+            int nid = node.nodeId;
+            string spk = speakerText ? speakerText.text : (node.speaker ?? string.Empty);
+            string body = bodyText ? bodyText.text : (node.text ?? string.Empty);
+            ChatLogManager.Instance.Push(nid, spk, body);
+        }
         // 링크 히트박스 "미리" 생성
         if (bodyOverlay != null) { bodyOverlay.Rebuild(); bodyOverlay.SetVisibleCharacterCount(0); }
 
@@ -532,10 +542,14 @@ public sealed class DialogueUI : MonoBehaviour
         currentFullText = fullRich ?? string.Empty;
         if (!bodyText) return;
 
-        bodyText.text = currentFullText;       // 링크/색 포함된 텍스트
-        bodyText.ForceMeshUpdate();            // 줄바꿈 확정
+        bodyText.text = currentFullText;   // 링크/색 포함된 텍스트
+
+        //파괴/비활성 가드 + try/catch
+        if (!bodyText || !bodyText.gameObject.activeInHierarchy) return;
+        try { bodyText.ForceMeshUpdate(); } catch { return; }
+
         currentVisible = 0;
-        bodyText.maxVisibleCharacters = 0;     // 0부터 시작
+        bodyText.maxVisibleCharacters = 0; // 0부터 시작
     }
 
     void BeginTyping()
@@ -577,11 +591,14 @@ public sealed class DialogueUI : MonoBehaviour
 
     IEnumerator CoType(TMP_Text label, float charsPerSec)
     {
-        if (!label) yield break;
-
+        // 시작 시점 가드
+        if (!this || !label) yield break;
         isTyping = true;
 
-        label.ForceMeshUpdate();
+        // 첫 ForceMeshUpdate도 안전하게
+        if (!label || !label.gameObject.activeInHierarchy) { isTyping = false; yield break; }
+        try { label.ForceMeshUpdate(); } catch { isTyping = false; yield break; }
+
         int totalChars = label.textInfo.characterCount;
 
         float t = 0f;
@@ -590,8 +607,21 @@ public sealed class DialogueUI : MonoBehaviour
 
         while (true)
         {
-            label.ForceMeshUpdate();
-            totalChars = label.textInfo.characterCount;
+            // ★ 루프마다 생존 확인
+            if (!this || !label) { isTyping = false; typingCo = null; yield break; }
+            if (!label.gameObject.activeInHierarchy) { isTyping = false; typingCo = null; yield break; }
+
+            // 안전한 ForceMeshUpdate
+            try
+            {
+                label.ForceMeshUpdate();
+                totalChars = label.textInfo.characterCount;
+            }
+            catch
+            {
+                isTyping = false; typingCo = null; yield break;
+            }
+
             if (targetVisible >= totalChars) break;
 
             float dt = typingUseUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
@@ -617,30 +647,31 @@ public sealed class DialogueUI : MonoBehaviour
             yield return null;
         }
 
-        label.maxVisibleCharacters = int.MaxValue;
+        // 끝맺음
+        if (label) label.maxVisibleCharacters = int.MaxValue;
         isTyping = false;
         typingCo = null;
-
         RefreshOverlaysAfterTyping();
     }
 
+
     void RefreshOverlaysAfterTyping()
     {
-        if (speakerOverlay != null)
+        if (speakerOverlay != null && speakerText && speakerText.gameObject.activeInHierarchy)
         {
             speakerOverlay.Bind(speakerText, HandleLink);
             speakerOverlay.Rebuild();
-            speakerOverlay.SetVisibleCharacterCount(int.MaxValue); // ★ 항상 보이게
+            speakerOverlay.SetVisibleCharacterCount(int.MaxValue);
         }
-        if (bodyOverlay != null)
+        if (bodyOverlay != null && bodyText && bodyText.gameObject.activeInHierarchy)
         {
             bodyOverlay.Bind(bodyText, HandleLink);
             bodyOverlay.Rebuild();
-            // 현재 보이는 글자 수를 반영(타이핑 끝이면 MaxValue)
             int visible = bodyText ? bodyText.maxVisibleCharacters : int.MaxValue;
-            bodyOverlay.SetVisibleCharacterCount(visible);         // ★ 핵심
+            bodyOverlay.SetVisibleCharacterCount(visible);
         }
     }
+
 
     public void ShowChoices(ReadOnlySpan<Choice> choices)
     {
@@ -775,4 +806,20 @@ public sealed class DialogueUI : MonoBehaviour
             }
         }
     }
+    //버그 터진거 관련 수습...
+    void StopTypingRoutine()
+    {
+        if (typingCo != null)
+        {
+            StopCoroutine(typingCo);
+            typingCo = null;
+        }
+        isTyping = false;
+        // 오버레이/표시 상태를 안전값으로
+        try { bodyOverlay?.SetVisibleCharacterCount(int.MaxValue); } catch { }
+    }
+
+    // 라이프사이클에서 반드시 정리
+    void OnDisable() { StopTypingRoutine(); }
+    void OnDestroy() { StopTypingRoutine(); }
 }

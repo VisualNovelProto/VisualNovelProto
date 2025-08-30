@@ -7,7 +7,7 @@ public sealed class DataManager : MonoBehaviour
     [Header("Resources Paths")]
     public string glossaryPath = "StoryText/glossary";
     public string charactersPath = "StoryText/characters";
-    public string characterVisibilityPath = "StoryText/character_visibility";
+    public string characterVisibilityPath = "StoryText/characterVisibility";
 
     [Header("Caches")]
     public GlossaryDatabase glossary;
