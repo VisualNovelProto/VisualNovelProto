@@ -31,11 +31,13 @@ public sealed class GameRoot : MonoBehaviour
         // 설정 로드 & 적용
         settings.Load();     // 파일 없으면 기본값 생성
         settings.ApplyAll(); // 오디오/타이핑/해상도 즉시 반영
-
-        // 씬 진입 때마다 필요 요소 갱신(씬 로컬 오브젝트 재바인딩 등)
+    }
+    void Start()
+    {
+        settings.Load();
+        settings.ApplyAll();
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
-
     void OnDestroy()
     {
         if (Instance == this) SceneManager.sceneLoaded -= OnSceneLoaded;
