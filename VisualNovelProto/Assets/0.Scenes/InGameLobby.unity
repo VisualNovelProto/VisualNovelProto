@@ -1026,7 +1026,7 @@ MonoBehaviour:
   tabGlossary: {fileID: 0}
   tabCharacters: {fileID: 0}
   glossaryViewer: {fileID: 0}
-  characterViewer: {fileID: 444638901}
+  characterViewer: {fileID: 0}
 --- !u!1 &336918790
 GameObject:
   m_ObjectHideFlags: 0

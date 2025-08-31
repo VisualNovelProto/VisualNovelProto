@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-
-public class NewGame : MonoBehaviour
+public class MenuButton : MonoBehaviour
 {
-    public void GoToStage1()
+    public void GoToLobby()
     {
-        SceneManager.LoadScene("InGameStoryScene");
+        SceneManager.LoadScene("InGameLobby");
     }
 }
