@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 public sealed class CharacterViewer : MonoBehaviour
 {
@@ -49,6 +50,13 @@ public sealed class CharacterViewer : MonoBehaviour
         SetDetailUnknown(); // ¿¡µðÅÍ ÅØ½ºÆ® ¼û±è
     }
 
+    void Update()
+    {
+        if (!opened) return;
+        var kb = Keyboard.current;
+        if (kb != null && kb.escapeKey.wasPressedThisFrame) Close();
+    }
+
     void OnEnable()
     {
         if (closeButton != null)
@@ -87,7 +95,7 @@ public sealed class CharacterViewer : MonoBehaviour
         if (rootPanel != null) rootPanel.SetActive(true);
         else gameObject.SetActive(true);
 
-        if (!opened) { UiModalGate.Push(); opened = true; }
+        if (!opened) { UiModalGate.Push(Close); opened = true; }
 
         startIndex = 0;
         if (focusId >= 0)
@@ -119,12 +127,6 @@ public sealed class CharacterViewer : MonoBehaviour
 
     public void NextPage() { if (db == null) return; startIndex = NextStart(startIndex); Refresh(); SetDetailUnknown(); }
     public void PrevPage() { if (db == null) return; startIndex = PrevStart(startIndex); Refresh(); SetDetailUnknown(); }
-
-    void Update()
-    {
-        if (!opened) return;
-        if (Input.GetKeyDown(closeKey)) Close();
-    }
 
     // ========= Internal =========
 

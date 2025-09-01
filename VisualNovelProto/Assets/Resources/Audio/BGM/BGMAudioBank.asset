@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: BGMAudioBank
   m_EditorClassIdentifier: 
   items:
-  - key: 
-    clip: {fileID: 0}
+  - key: HappyBGM
+    clip: {fileID: 8300000, guid: 41adfaac8b10d944b8e167098b0eec7e, type: 3}
+    volume: 0
+  - key: NervousBGM
+    clip: {fileID: 8300000, guid: dc8f14fcebc2de24290dbd9632e148c4, type: 3}
     volume: 0

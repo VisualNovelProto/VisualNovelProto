@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 
+[DefaultExecutionOrder(-1)]
 public sealed class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }

@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 public sealed class GlossaryViewer : MonoBehaviour
 {
@@ -47,6 +48,14 @@ public sealed class GlossaryViewer : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        if (!opened) return;
+        var kb = Keyboard.current;
+        if (kb != null && kb.escapeKey.wasPressedThisFrame) Close();
+    }
+
+
     void OnDisable()
     {
         // 강제 종료 상황에서도 게이트 복구
@@ -64,7 +73,7 @@ public sealed class GlossaryViewer : MonoBehaviour
         if (rootPanel != null) rootPanel.SetActive(true);
         else gameObject.SetActive(true);
 
-        if (!opened) { UiModalGate.Push(); opened = true; }
+        if (!opened) { UiModalGate.Push(Close); opened = true; }
 
         // 포커스 아이템 기준으로 페이지 시작 정하기
         startIndex = 0;
@@ -92,13 +101,6 @@ public sealed class GlossaryViewer : MonoBehaviour
         else gameObject.SetActive(false);
 
         if (opened) { UiModalGate.Pop(); opened = false; }    // ★ 스토리 입력 해제
-    }
-
-    void Update()
-    {
-        // ESC로 닫기
-        if (!opened) return;
-        if (Input.GetKeyDown(closeKey)) Close();
     }
 
     public void NextPage()

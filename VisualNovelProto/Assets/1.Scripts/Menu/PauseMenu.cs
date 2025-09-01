@@ -46,14 +46,11 @@ public sealed class PauseMenu : MonoBehaviour
         if (btnExit != null) btnExit.onClick.AddListener(ExitGame);
     }
 
-    void Update()
+    public void Toggle()
     {
         // ESC ≈‰±€
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            if (paused) Close();
-            else Open();
-        }
+        if (paused) Close();
+        else Open();
     }
 
     void OnDisable()
@@ -66,7 +63,7 @@ public sealed class PauseMenu : MonoBehaviour
         }
     }
 
-    public void Open()
+    void Open()
     {
         paused = true;
         IsPaused = true;
@@ -75,7 +72,7 @@ public sealed class PauseMenu : MonoBehaviour
         if (rootPanel != null) rootPanel.SetActive(true);
     }
 
-    public void Close()
+    void Close()
     {
         paused = false;
         IsPaused = false;
