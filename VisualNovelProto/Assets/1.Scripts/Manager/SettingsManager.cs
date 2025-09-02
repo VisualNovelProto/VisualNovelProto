@@ -19,6 +19,14 @@ public sealed class SettingsManager : MonoBehaviour
         public int vSyncCount;        // 0/1/2 ...
 
         public int resolutionPreset;                 // 0=720, 1=1080, 2=1440
+
+        public float masterVolume;    // 0..1
+        public float voiceVolume;     // 0..1
+        public float mouseSensitivity;// 0.05..10
+        public string languageCode;   // "ko","en","ja"...
+        public int fontIndex;      // 폰트 선택 인덱스
+        public int textureQuality; // 0 Full,1 Half,2 Quarter,3 Eighth
+        public int antiAliasing;   // 0,2,4,8
     }
 
     public enum TypingSpeed { Off = 0, Slow = 1, Normal = 2, Fast = 3 }
@@ -26,6 +34,7 @@ public sealed class SettingsManager : MonoBehaviour
     public SettingsData data;
 
     string filePath;
+    float master = 1f, voiceMaster = 1f;
 
     void Reset()
     {
@@ -42,6 +51,14 @@ public sealed class SettingsManager : MonoBehaviour
         data.vSyncCount = 1;
 
         data.resolutionPreset = 1; // 1080p 기본
+
+        data.masterVolume = 1.0f;
+        data.voiceVolume = 1.0f;
+        data.mouseSensitivity = 1.0f;
+        data.languageCode = "ko";
+        data.fontIndex = 0;
+        data.textureQuality = 0;
+        data.antiAliasing = 0;
     }
 
     void Awake()
@@ -97,8 +114,10 @@ public sealed class SettingsManager : MonoBehaviour
     {
         if (AudioManager.Instance != null)
         {
+            AudioManager.Instance.SetMasterVolume(Mathf.Clamp01(data.masterVolume));
             AudioManager.Instance.SetBgmMasterVolume(Mathf.Clamp01(data.bgmVolume));
             AudioManager.Instance.SetSfxMasterVolume(Mathf.Clamp01(data.sfxVolume));
+            AudioManager.Instance.SetVoiceMasterVolume(Mathf.Clamp01(data.voiceVolume)); // 보이스 채널 쓰면
         }
     }
 
@@ -116,11 +135,12 @@ public sealed class SettingsManager : MonoBehaviour
 
     public void ApplyDisplay()
     {
-        // vSync/targetFPS는 기존대로
         QualitySettings.vSyncCount = Mathf.Max(0, data.vSyncCount);
         Application.targetFrameRate = data.targetFps;
 
-        // 프리셋 적용 (ResolutionManager 경유)
+        QualitySettings.masterTextureLimit = Mathf.Clamp(data.textureQuality, 0, 3);
+        QualitySettings.antiAliasing = data.antiAliasing;
+
         var rm = ResolutionManager.Instance;
         if (rm != null)
         {
@@ -146,6 +166,8 @@ public sealed class SettingsManager : MonoBehaviour
     }
 
     // ---------- UI handlers (메뉴 연결용) ----------
+
+
     public void OnChangeBgmVolume(float v) { data.bgmVolume = v; Save(); ApplyAudio(); }
     public void OnChangeSfxVolume(float v) { data.sfxVolume = v; Save(); ApplyAudio(); }
     public void OnChangeTypingSpeed(int idx) { data.typing = (TypingSpeed)Mathf.Clamp(idx, 0, 3); Save(); ApplyTyping(); }

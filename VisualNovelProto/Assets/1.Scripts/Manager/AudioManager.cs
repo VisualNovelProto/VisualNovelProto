@@ -30,6 +30,7 @@ public sealed class AudioManager : MonoBehaviour
     //세터
     float bgmMaster = 1f;
     float sfxMaster = 1f;
+    float master = 1f, voiceMaster = 1f;
 
     AudioSource[] sfx; int sfxCursor;
 
@@ -172,4 +173,19 @@ public sealed class AudioManager : MonoBehaviour
     {
         sfxMaster = Mathf.Clamp01(v);
     }
+    public void SetMasterVolume(float v)
+    {
+        master = Mathf.Clamp01(v);
+        // BGM 페이더/현 볼륨에 모두 master 곱해 반영
+        if (bgm != null)
+        {
+            for (int i = 0; i < bgm.Length; i++)
+            {
+                if (!bgm[i]) continue;
+                float baseVol = (i == bgmFront ? 1f : 0f); // 교차페이드 내부 로직 유지
+                bgm[i].volume = baseVol * bgmMaster * master;
+            }
+        }
+    }
+    public void SetVoiceMasterVolume(float v) { voiceMaster = Mathf.Clamp01(v); }
 }
