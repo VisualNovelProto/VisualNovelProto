@@ -46,18 +46,25 @@ public sealed class LogViewerList : MonoBehaviour
 
     public void Open()
     {
-        if (panel) panel.SetActive(true);
-
+        panel.SetActive(true);
         UiModalGate.Push(Close);
         Rebuild();
-        // 최신 위치로 스냅
-        SnapToLatest();
+        // 첫 클릭 잔상 방지
+        InputRouter.Instance?.SuppressAdvance(0.05f);
     }
 
     public void Close()
     {
-        if (panel) panel.SetActive(false);
+        panel.SetActive(false);
         UiModalGate.Pop();
+        // 선택 초기화(포커스 잔상 제거)
+        if (UnityEngine.EventSystems.EventSystem.current)
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+        // (선택) CanvasGroup을 썼다면 반드시 blocksRaycasts=false로 복귀
+        var cg = panel.GetComponent<CanvasGroup>();
+        if (cg) cg.blocksRaycasts = false;
+        // 첫 클릭 잔상 방지
+        InputRouter.Instance?.SuppressAdvance(0.05f);
     }
 
     void Update()

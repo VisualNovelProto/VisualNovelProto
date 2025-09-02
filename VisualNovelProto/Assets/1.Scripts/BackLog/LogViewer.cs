@@ -8,6 +8,7 @@ public sealed class LogViewer : MonoBehaviour
     [Header("UI")]
     public GameObject panel;           // 루트 패널(SetActive on/off)
     public TextMeshProUGUI content;    // 로그 표시용 텍스트
+    public Button openButton;
     public Button closeButton;
 
     [Header("Options")]
@@ -20,20 +21,23 @@ public sealed class LogViewer : MonoBehaviour
     void Awake()
     {
         if (panel != null) panel.SetActive(false);
+        if (openButton != null) { openButton.onClick.RemoveAllListeners(); openButton.onClick.AddListener(Open); }
         if (closeButton != null) { closeButton.onClick.RemoveAllListeners(); closeButton.onClick.AddListener(Close); }
         tmp = new ChatLogManager.LogEntry[Mathf.Max(8, linesToShow)];
     }
 
     public void Open()
     {
-        if (panel != null) panel.SetActive(true);
+        if (panel != null)
+            panel.SetActive(true);
         UiModalGate.Push(Close); // 모달 열림. :contentReference[oaicite:2]{index=2}
         Rebuild();
     }
 
     public void Close()
     {
-        if (panel != null) panel.SetActive(false);
+        if (panel != null)
+            panel.SetActive(false);
         UiModalGate.Pop();  // 모달 닫힘. :contentReference[oaicite:3]{index=3}
     }
 

@@ -51,5 +51,7 @@ public sealed class GameRoot : MonoBehaviour
 
         // 새 씬에서 옵션 즉시 재적용(특히 해상도/캔버스 스케일, 타이핑 등)
         settings.ApplyAll();
+        ChatLogManager.Instance.Clear();
+        UiModalGate.Reset();
     }
 }

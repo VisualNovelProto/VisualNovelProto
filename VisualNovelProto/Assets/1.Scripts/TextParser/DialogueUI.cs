@@ -166,13 +166,15 @@ public sealed class DialogueUI : MonoBehaviour
         if (characters != null) shown = CharacterHighlighter.InjectLinks(shown, characters);
 
         SetBodyTextForTyping(shown);   //원문(node.text)로 덮어쓰지 않음
-        if (ChatLogManager.Instance != null)
-        {
-            int nid = node.nodeId;
-            string spk = speakerText ? speakerText.text : (node.speaker ?? string.Empty);
-            string body = bodyText ? bodyText.text : (node.text ?? string.Empty);
-            ChatLogManager.Instance.Push(nid, spk, body);
-        }
+        //로그 입력
+        StartCoroutine(CoPushLog(node));
+        //if (ChatLogManager.Instance != null)
+        //{
+        //    int nid = node.nodeId;
+        //    string spk = speakerText ? speakerText.text : (node.speaker ?? string.Empty);
+        //    string body = bodyText ? bodyText.text : (node.text ?? string.Empty);
+        //    ChatLogManager.Instance.Push(nid, spk, body);
+        //}
         // 링크 히트박스 "미리" 생성
         if (bodyOverlay != null) { bodyOverlay.Rebuild(); bodyOverlay.SetVisibleCharacterCount(0); }
 
@@ -393,7 +395,11 @@ public sealed class DialogueUI : MonoBehaviour
             default: return 1; // 안전: Center
         }
     }
-
+    IEnumerator CoPushLog(DialogueNode node)
+    {
+        yield return null; // 1프레임 대기
+        ChatLogManager.Instance?.Push(node.nodeId, speakerText?.text ?? node.speaker, bodyText?.text ?? node.text);
+    }
     void UpdateActors(string spec)
     {
         // 1) 새 명령 파싱(최대 3개, 추가 할당 없이)
@@ -717,6 +723,7 @@ public sealed class DialogueUI : MonoBehaviour
         if (UiModalGate.IsOpen) return;
         if (awaitingChoice) return;
         if (runner != null) runner.Step();
+        Debug.Log("test");
     }
 
     void OnClickChoice(int index)

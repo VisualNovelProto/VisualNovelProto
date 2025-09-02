@@ -28,6 +28,11 @@ public sealed class ChatLogManager : MonoBehaviour
         buf = new LogEntry[capacity];
         head = 0; count = 0;
     }
+    void OnDestroy()
+    {
+        // ¡Ú ÆÄ±«µÉ ¶§ ½Ì±ÛÅÏ ÇØÁ¦
+        if (Instance == this) Instance = null;
+    }
 
     public void Clear() { head = 0; count = 0; }
 

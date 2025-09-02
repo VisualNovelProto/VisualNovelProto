@@ -675,17 +675,6 @@
             "bindings": [
                 {
                     "name": "",
-                    "id": "4ae12ecb-4964-4075-adec-bf1a68397e42",
-                    "path": "<Mouse>/leftButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "ViusalNovelControl",
-                    "action": "Advance",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "8264c2c7-c018-490b-8a78-13aec1962aa3",
                     "path": "<Keyboard>/enter",
                     "interactions": "",
