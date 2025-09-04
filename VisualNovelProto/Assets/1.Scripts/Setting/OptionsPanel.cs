@@ -27,7 +27,7 @@ public sealed class OptionsPanel : MonoBehaviour
     [Header("Gameplay / Input")]
     public Slider slMouseSens;            // 0.1~5.0 등
     public TMP_Dropdown ddTypingSpeed;    // 0 Off, 1 Slow, 2 Normal, 3 Fast
-    public Slider slPunctDelay;           // 0.00~0.08 권장
+    public Slider slPunctDelay;           // 마침부호 후 딜레이 0.00~0.08 권장
 
     [Header("Performance")]
     public TMP_Dropdown ddTargetFps;      // 0=Platform(0), 1=30, 2=60, 3=120, 4=144, 5=165, 6=240
@@ -53,6 +53,7 @@ public sealed class OptionsPanel : MonoBehaviour
 
         // 드롭다운 옵션이 비어있다면 코드로 기본 항목을 깔아도 됨(원하면 주석 해제)
         // InitDropdownsIfEmpty();
+        root.SetActive(false);
     }
 
     // === 열고/닫기 (모달) ===

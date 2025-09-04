@@ -21,6 +21,7 @@ public sealed class PauseMenu : MonoBehaviour
     public Button btnExit;
 
     [Header("Panels / Viewers")]
+    public OptionsPanel optionPanel;
     public GlossaryViewer glossaryViewer;     // ★ 직접 열기
     public CharacterViewer characterViewer;   // ★ 직접 열기
 
@@ -30,8 +31,15 @@ public sealed class PauseMenu : MonoBehaviour
 
     bool paused;
 
-    public void OnClickSaveSlot1() { SaveLoadManager.Instance?.Save(1); }
-    public void OnClickLoadSlot1() { SaveLoadManager.Instance?.Load(1, jumpToNode: true); }
+    public void OnClickSaveSlot1()
+    {
+        SaveLoadManager.Instance?.SaveManual(1);
+    }
+
+    public void OnClickLoadSlot1()
+    {
+        SaveLoadManager.Instance?.LoadManual(1, jumpToNode: true, clearBeforeApply: true);
+    }
 
     void Awake()
     {
@@ -84,7 +92,15 @@ public sealed class PauseMenu : MonoBehaviour
     void OpenOptions()
     {
         // 옵션 패널을 따로 쓰면 여기서 SetActive(true)
-        Debug.Log("Open Options");
+        if (optionPanel == null)
+        {
+            Debug.LogWarning("PauseMenu: optionPanel이 연결되어 있지 않습니다.");
+            return;
+        }
+        if (closeMenuWhenOpenPanels)
+            Close();
+
+        optionPanel.Open();
     }
 
     void LoadMenu()

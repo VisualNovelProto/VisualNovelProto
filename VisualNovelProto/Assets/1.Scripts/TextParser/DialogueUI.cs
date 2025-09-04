@@ -723,7 +723,6 @@ public sealed class DialogueUI : MonoBehaviour
         if (UiModalGate.IsOpen) return;
         if (awaitingChoice) return;
         if (runner != null) runner.Step();
-        Debug.Log("test");
     }
 
     void OnClickChoice(int index)
