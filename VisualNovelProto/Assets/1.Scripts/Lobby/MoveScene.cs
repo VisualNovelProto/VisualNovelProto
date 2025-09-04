@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 
-public class NewGame : MonoBehaviour
+public class MoveScene : MonoBehaviour
 {
     public void GoToStage1()
     {
