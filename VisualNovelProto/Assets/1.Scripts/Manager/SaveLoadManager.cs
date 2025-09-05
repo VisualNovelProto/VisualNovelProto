@@ -34,6 +34,10 @@ public sealed class SaveLoadManager : MonoBehaviour
 
     [Header("Time Source")]
     public bool useUnscaledTime = true;
+    [Header("Log Snapshot")]
+    public int logTailCount = 40; // 세이브에 함께 저장할 백로그 줄 수 (권장 30~50)
+
+    ChatLogManager.LogEntry[] _tmpLogBuf; // 동적할당 최소화용 임시 버퍼
 
     // --- 재사용 버퍼 (동적 생성 최소화) ---
     readonly List<int> tmpFlags = new List<int>(4096);
@@ -46,6 +50,15 @@ public sealed class SaveLoadManager : MonoBehaviour
     int _lastObservedNodeId = -1;    // 진행 감지
     float _playtimeSec;                // 누적 플레이타임(세션 내)
     DateTime _sessionStart;
+
+    [System.Serializable]
+    public struct LogLine
+    {
+        public int nodeId;          // 선택(언어 바뀌면 재생성용)
+        public string speaker;      // 화면에 보인 최종 문자열(링크/색상 포함 OK)
+        public string body;         // 화면에 보인 최종 문자열
+    }
+
 
     // --- 저장 데이터 포맷 ---
     [Serializable]
@@ -62,6 +75,7 @@ public sealed class SaveLoadManager : MonoBehaviour
         public int[] flags;               // 켜진 플래그 id
         public int[] glossary;            // 소유 글로서리 id
         public int[] characters;          // 소유 캐릭터 id
+        public LogLine[] logTail;
     }
 
     // === 수명주기 ===
@@ -245,6 +259,34 @@ public sealed class SaveLoadManager : MonoBehaviour
             characters = tmpCharacters.ToArray()
         };
 
+        // 4-1) 백로그 스냅샷 저장
+        var lm = ChatLogManager.Instance;
+        if (lm != null && logTailCount > 0)
+        {
+            int want = Mathf.Min(logTailCount, lm.Count);
+            if (want > 0)
+            {
+                // 임시 버퍼 크기 확보
+                if (_tmpLogBuf == null || _tmpLogBuf.Length < want)
+                    _tmpLogBuf = new ChatLogManager.LogEntry[want];
+
+                int got = lm.CopyLatest(_tmpLogBuf, want); // 오래된→최신 순서로 채워짐
+                if (got > 0)
+                {
+                    data.logTail = new LogLine[got];
+                    for (int i = 0; i < got; i++)
+                    {
+                        data.logTail[i] = new LogLine
+                        {
+                            nodeId = _tmpLogBuf[i].nodeId,
+                            speaker = _tmpLogBuf[i].speaker,
+                            body = _tmpLogBuf[i].bodyRich
+                        };
+                    }
+                }
+            }
+        }
+
         // 5) 파일 기록
         try
         {
@@ -320,7 +362,32 @@ public sealed class SaveLoadManager : MonoBehaviour
                 for (int i = 0; i < data.characters.Length; i++) ui.characters.owned.Set(data.characters[i]);
 
             _playtimeSec = data.playtimeSec > 0 ? data.playtimeSec : _playtimeSec;
+            // 2-1) 백로그 복원 (점프 전에 처리)
+            if (clearBeforeApply)
+            {
+                ChatLogManager.Instance?.Clear();
+            }
+            if (data.logTail != null && data.logTail.Length > 0)
+            {
+                // 점프할 노드가 스냅샷의 '마지막 줄'과 같다면 마지막 줄은 제외(점프 직후 중복 방지)
+                int tailLen = data.logTail.Length;
+                int end = tailLen;
+                if (jumpToNode && data.nodeId >= 0 && tailLen > 0)
+                {
+                    var last = data.logTail[tailLen - 1];
+                    if (last.nodeId == data.nodeId) end = tailLen - 1;
+                }
 
+                var lm = ChatLogManager.Instance;
+                if (lm != null)
+                {
+                    for (int i = 0; i < end; i++)
+                    {
+                        var l = data.logTail[i];
+                        lm.Push(l.nodeId, l.speaker, l.body);
+                    }
+                }
+            }
             // 3) 점프
             if (jumpToNode && data.nodeId >= 0)
             {
