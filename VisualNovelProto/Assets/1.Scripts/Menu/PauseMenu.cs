@@ -13,6 +13,7 @@ public sealed class PauseMenu : MonoBehaviour
 
     [Header("Buttons")]
     public Button btnReturn;
+    public Button btnSave;
     public Button btnLoad;
     public Button btnGlossary;                // ★ 새로 추가
     public Button btnCharacters;              // ★ 새로 추가
@@ -24,6 +25,7 @@ public sealed class PauseMenu : MonoBehaviour
     public OptionsPanel optionPanel;
     public GlossaryViewer glossaryViewer;     // ★ 직접 열기
     public CharacterViewer characterViewer;   // ★ 직접 열기
+    public SaveLoadPanel saveLoadPanel;
 
     [Header("Databases (optional, 비워두면 자동 탐색)")]
     public GlossaryDatabase glossaryDb;
@@ -46,6 +48,7 @@ public sealed class PauseMenu : MonoBehaviour
         if (rootPanel != null) rootPanel.SetActive(false);
 
         if (btnReturn != null) btnReturn.onClick.AddListener(Close);
+        if (btnSave != null) btnSave.onClick.AddListener(SaveMenu);
         if (btnLoad != null) btnLoad.onClick.AddListener(LoadMenu);
         if (btnGlossary != null) btnGlossary.onClick.AddListener(OpenGlossary);
         if (btnCharacters != null) btnCharacters.onClick.AddListener(OpenCharacters);
@@ -102,10 +105,16 @@ public sealed class PauseMenu : MonoBehaviour
 
         optionPanel.Open();
     }
-
+    void SaveMenu()
+    {
+        // 나중에 세이브/로드 UI 연결
+        saveLoadPanel.Open(SaveLoadPanel.Mode.Save);
+        Debug.Log("Open Load Menu");
+    }
     void LoadMenu()
     {
         // 나중에 세이브/로드 UI 연결
+        saveLoadPanel.Open(SaveLoadPanel.Mode.Load);
         Debug.Log("Open Load Menu");
     }
 

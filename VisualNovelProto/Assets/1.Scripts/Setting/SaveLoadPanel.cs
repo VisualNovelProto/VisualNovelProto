@@ -25,6 +25,10 @@ public sealed class SaveLoadPanel : MonoBehaviour
     [Header("Thumbnail")]
     public Vector2Int thumbSize = new Vector2Int(512, 288); // 16:9
 
+    [Header("Thumbnail Capture (Camera)")]
+    [SerializeField] Canvas visualsCanvas;            // 이 Canvas만 썸네일에 담음
+    [SerializeField] Camera visualsCaptureCamera;     // 전용 캡쳐 카메라 (enabled=false 권장)
+
     Mode mode = Mode.Save;
     bool viewingManual = true;
 
@@ -162,13 +166,18 @@ public sealed class SaveLoadPanel : MonoBehaviour
 
     void DoSave(int slot)
     {
-        var mgr = SaveLoadManager.Instance; if (mgr == null) return;
+        StartCoroutine(CoDoSave(slot));
+    }
+
+    System.Collections.IEnumerator CoDoSave(int slot)
+    {
+        var mgr = SaveLoadManager.Instance; if (mgr == null) yield break;
         bool ok = mgr.SaveManual(slot);
         if (ok)
         {
-            // 썸네일 저장
-            SaveThumb(slot, true);
-            // 리스트 갱신
+            // 캡쳐 완료까지 '반드시' 기다린다
+            string path = ThumbPath(slot, true);
+            yield return CoCapture(path);
             Rebuild();
         }
     }
@@ -197,44 +206,65 @@ public sealed class SaveLoadPanel : MonoBehaviour
         catch { return null; }
     }
 
-    // 현재 프레임 화면을 축소 저장(512x288)
-    async void SaveThumb(int slot, bool manual)
-    {
-        string path = ThumbPath(slot, manual);
-        StartCoroutine(CoCapture(path));
-    }
-
     System.Collections.IEnumerator CoCapture(string path)
     {
-        yield return new WaitForEndOfFrame();
-        // 1) 화면 캡처
-        var src = ScreenCapture.CaptureScreenshotAsTexture();
-        // 2) 다운스케일
-        int tw = thumbSize.x, th = thumbSize.y;
+        if (!visualsCanvas || !visualsCaptureCamera)
+        {
+            Debug.LogWarning("SaveLoadPanel: visualsCanvas or visualsCaptureCamera is not set. Fallback to full-screen capture.");
+            yield return new WaitForEndOfFrame();
+            var full = ScreenCapture.CaptureScreenshotAsTexture();
+            try { System.IO.File.WriteAllBytes(path, full.EncodeToPNG()); }
+            finally { Destroy(full); }
+            yield break;
+        }
+
+        // --- 1) VisualsCanvas 설정 백업
+        var prevMode = visualsCanvas.renderMode;
+        var prevWorldCam = visualsCanvas.worldCamera;
+        var prevPlane = visualsCanvas.planeDistance;
+
+        // --- 2) 캡쳐용으로 전환 (잠시)
+        visualsCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+        visualsCanvas.worldCamera = visualsCaptureCamera;
+        visualsCanvas.planeDistance = 1f;
+
+        // 캔버스 갱신 반영 대기
+        Canvas.ForceUpdateCanvases();
+        yield return null;                   // 1프레임
+        yield return new WaitForEndOfFrame();// 렌더 직후
+
+        // --- 3) 카메라로 RenderTexture에 그리기
+        int tw = thumbSize.x, th = thumbSize.y;      // 기존 필드 사용
         var rt = RenderTexture.GetTemporary(tw, th, 0, RenderTextureFormat.ARGB32);
-        Graphics.Blit(src, rt);
-        var prev = RenderTexture.active;
+        var prevTarget = visualsCaptureCamera.targetTexture;
+        var prevActive = RenderTexture.active;
+
+        visualsCaptureCamera.targetTexture = rt;
+        visualsCaptureCamera.Render();
+
         RenderTexture.active = rt;
         var tex = new Texture2D(tw, th, TextureFormat.RGB24, false);
         tex.ReadPixels(new Rect(0, 0, tw, th), 0, 0);
         tex.Apply();
-        RenderTexture.active = prev;
-        RenderTexture.ReleaseTemporary(rt);
-        Destroy(src);
 
-        // 3) PNG 저장
+        // --- 4) 저장
         try
         {
-            var bytes = tex.EncodeToPNG();
-            File.WriteAllBytes(path, bytes);
+            System.IO.File.WriteAllBytes(path, tex.EncodeToPNG());
         }
         catch (System.Exception e)
         {
             Debug.LogWarning($"Save thumb failed: {e.Message}");
         }
-        finally
-        {
-            Destroy(tex);
-        }
+
+        // --- 5) 원복/정리
+        visualsCaptureCamera.targetTexture = prevTarget;
+        RenderTexture.active = prevActive;
+        RenderTexture.ReleaseTemporary(rt);
+        Destroy(tex);
+
+        visualsCanvas.renderMode = prevMode;
+        visualsCanvas.worldCamera = prevWorldCam;
+        visualsCanvas.planeDistance = prevPlane;
     }
 }
