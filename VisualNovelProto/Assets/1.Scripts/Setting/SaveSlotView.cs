@@ -1,6 +1,8 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
+using System.Globalization;
 
 public sealed class SaveSlotView : MonoBehaviour
 {
@@ -22,7 +24,7 @@ public sealed class SaveSlotView : MonoBehaviour
         if (_thumb) Destroy(_thumb);
     }
 
-    public void Bind(int index, bool manual, SaveLoadManager.SaveData? meta, Texture2D thumb, System.Action<SaveSlotView> onClick)
+    public void Bind(int index, bool manual, SaveLoadManager.SaveData? meta, Texture2D thumb, Action<SaveSlotView> onClick)
     {
         slotIndex = index; manualSlot = manual;
         hasData = meta.HasValue;
@@ -34,8 +36,19 @@ public sealed class SaveSlotView : MonoBehaviour
             if (meta.HasValue)
             {
                 var m = meta.Value;
-                // 필요한 항목만 간단 표기
-                metaText.text = $"{m.timestamp}\n{m.sceneName}  n:{m.nodeId}  t:{Mathf.RoundToInt(m.playtimeSec / 60f)}m";
+
+                // 저장된 문자열 "yyyy-MM-dd HH:mm:ss" → DateTime으로 파싱
+                DateTime dt;
+                if (!DateTime.TryParseExact(m.timestamp, "yyyy-MM-dd HH:mm:ss",
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
+                {
+                    dt = DateTime.Now;
+                }
+
+                // 2줄: 날짜/시간(한국식) + 플레이타임
+                string koDateTime = dt.ToString("yyyy년 M월 d일 HH시 mm분 ss초", new CultureInfo("ko-KR"));
+                string play = FormatPlayTimeKo(TimeSpan.FromSeconds(Mathf.Max(0f, m.playtimeSec)));
+                metaText.text = $"{koDateTime}\n{play}";
             }
             else metaText.text = "-";
         }
@@ -64,5 +77,15 @@ public sealed class SaveSlotView : MonoBehaviour
             button.onClick.AddListener(() => onClick?.Invoke(this));
             button.interactable = hasData || manual; // 로드 탭에서 빈 슬롯 클릭은 무시
         }
+    }
+    static string FormatPlayTimeKo(TimeSpan t)
+    {
+        if (t.TotalSeconds < 1) return "0초";
+        var sb = new System.Text.StringBuilder(16);
+        sb.Append("플레이 타임 : ");
+        if (t.TotalHours >= 1) sb.Append((int)t.TotalHours).Append("시간 ");
+        if (t.Minutes > 0) sb.Append(t.Minutes).Append("분 ");
+        sb.Append(t.Seconds).Append("초");
+        return sb.ToString();
     }
 }
