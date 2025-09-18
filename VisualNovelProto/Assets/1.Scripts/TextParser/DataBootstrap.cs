@@ -10,26 +10,32 @@ public sealed class DataBootstrap : MonoBehaviour
 
     void Awake()
     {
+        var root = GameRoot.Instance;
+
         if (ui != null)
         {
-            if (ui.glossary == null)
-                ui.glossary = GlossaryDatabase.LoadFromResources(glossaryPath);
-
             if (ui.characters == null)
-                ui.characters = CharacterDatabase.LoadFromResources(charactersPath);
+                ui.characters = root ? root.characterDb : CharacterDatabase.LoadFromResources(charactersPath);
+            if (ui.glossary == null)
+                ui.glossary = root ? root.glossaryDb : GlossaryDatabase.LoadFromResources(glossaryPath);
+
+        }
+        if (collections != null && collections.characterViewer != null)
+        {
+            var cdb = root ? root.characterDb
+                           : (ui != null ? ui.characters : CharacterDatabase.LoadFromResources(charactersPath));
+            collections.characterViewer.Bind(cdb);
         }
 
-        if (collections != null)
+        if (collections != null && collections.characterViewer != null)
         {
-            // GlossaryViewer는 기존처럼 열릴 거고,
-            // 캐릭터 뷰어에도 DB를 바인딩해둔다.
-            if (collections.characterViewer != null)
-            {
-                var cdb = (ui != null && ui.characters != null)
-                          ? ui.characters
-                          : CharacterDatabase.LoadFromResources(charactersPath);
-                collections.characterViewer.Bind(cdb);
-            }
+            collections.characterViewer.Bind(root != null ? root.characterDb : ui.characters);
         }
+        //if (collections != null && collections.glossaryViewer != null)
+        //{
+        //    var gdb = root ? root.glossaryDb
+        //                   : (ui != null ? ui.glossary : GlossaryDatabase.LoadFromResources(glossaryPath));
+        //    collections.glossaryViewer.Bind(gdb);
+        //}
     }
 }

@@ -778,7 +778,7 @@ public sealed class DialogueUI : MonoBehaviour
         {
             if (int.TryParse(linkId.Substring(2), out int id) && glossary != null && glossary.Exists(id))
             {
-                glossary.owned.Set(id);
+                GlobalCodex.AddGlossary(glossary, id);
                 if (glossaryViewer != null) glossaryViewer.Open(glossary, id);
             }
         }
@@ -786,8 +786,14 @@ public sealed class DialogueUI : MonoBehaviour
         {
             if (int.TryParse(linkId.Substring(2), out int id) && characters != null && characters.Exists(id))
             {
-                characters.owned.Set(id);
-                if (characterViewer != null) characterViewer.Open(characters, id);
+                if (characters != null && characters.Exists(id))
+                {
+                    GlobalCodex.AddCharacter(characters, id);
+                    if (characterViewer != null)
+                    {
+                        characterViewer.Open(characters, id);
+                    }
+                }
             }
         }
     }
@@ -804,11 +810,13 @@ public sealed class DialogueUI : MonoBehaviour
 
             if (id[0] == 'g' && id[1] == ':' && autoUnlockGlossaryOnAppear)
             {
-                int v; if (int.TryParse(id.Substring(2), out v) && glossary != null) glossary.owned.Set(v);
+                if (int.TryParse(id.Substring(2), out int v))
+                    GlobalCodex.AddGlossary(glossary, v);
             }
             else if (id[0] == 'c' && id[1] == ':' && autoUnlockCharacterOnAppear)
             {
-                int v; if (int.TryParse(id.Substring(2), out v) && characters != null) characters.owned.Set(v);
+                if (int.TryParse(id.Substring(2), out int v))
+                    GlobalCodex.AddCharacter(characters, v);
             }
         }
     }

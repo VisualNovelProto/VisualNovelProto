@@ -15,6 +15,12 @@ public sealed class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager Instance { get; private set; }
 
+    [Header("씬 체크")]
+    [SerializeField] string gameplaySceneName = "InGameStoryScene"; // 인게임 씬 이름
+    enum PendingKind { None, Manual, Auto }
+    PendingKind _pendingKind = PendingKind.None;
+    int _pendingLoadSlot = -1;
+
     [Header("Bindings (씬 의존)")]
     public DialogueRunner runner; // 씬 로드마다 허브로 주입
     public DialogueUI ui;         // glossary/characters 접근용(씬 로컬)
@@ -59,7 +65,6 @@ public sealed class SaveLoadManager : MonoBehaviour
         public string body;         // 화면에 보인 최종 문자열
     }
 
-
     // --- 저장 데이터 포맷 ---
     [Serializable]
     public struct SaveData
@@ -93,6 +98,8 @@ public sealed class SaveLoadManager : MonoBehaviour
         if (Instance == this) Instance = null;
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
+    void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
+    void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
     void OnSceneLoaded(Scene s, LoadSceneMode m)
     {
@@ -107,6 +114,8 @@ public sealed class SaveLoadManager : MonoBehaviour
         // 씬 바뀌면 오토세이브 타이머/진행 감지 초기화
         _timer = 0f;
         _lastObservedNodeId = SafeGetNodeId();
+
+        TryPerformPendingLoad();
     }
 
     void Update()
@@ -178,7 +187,29 @@ public sealed class SaveLoadManager : MonoBehaviour
         if (string.IsNullOrEmpty(best)) return false;
         return LoadFromPath(best, jumpToNode, clearBeforeApply);
     }
+    // 로비 등에서 호출(수동 슬롯)
+    public void RequestLoadFromLobby(int slot)
+    {
+        _pendingKind = PendingKind.Manual;
+        _pendingLoadSlot = slot;
+        var cur = SceneManager.GetActiveScene().name;
+        if (cur != gameplaySceneName)
+            SceneManager.LoadScene(gameplaySceneName);
+        else
+            TryPerformPendingLoad();
+    }
 
+    // 로비 등에서 호출(오토 슬롯)
+    public void RequestLoadAutoFromLobby(int slot)
+    {
+        _pendingKind = PendingKind.Auto;
+        _pendingLoadSlot = slot;
+        var cur = SceneManager.GetActiveScene().name;
+        if (cur != gameplaySceneName)
+            SceneManager.LoadScene(gameplaySceneName);
+        else
+            TryPerformPendingLoad();
+    }
     /// <summary>슬롯 메타 정보 단순 조회(UI 목록용)</summary>
     public bool TryGetSlotInfo(bool manual, int slot, out SaveData meta)
     {
@@ -194,7 +225,19 @@ public sealed class SaveLoadManager : MonoBehaviour
     }
 
     // === 내부 구현 ===
+    void TryPerformPendingLoad()
+    {
+        if (_pendingKind == PendingKind.None) return;
+        if (!ui || !runner) { Debug.LogWarning("Load pending: runner/ui not ready yet."); return; }
 
+        bool ok = false;
+        if (_pendingKind == PendingKind.Manual)
+            ok = LoadManual(_pendingLoadSlot);
+        else if (_pendingKind == PendingKind.Auto)
+            ok = LoadAutosaveSlot(_pendingLoadSlot);
+
+        if (ok) { _pendingKind = PendingKind.None; _pendingLoadSlot = -1; }
+    }
     string PathOf(string prefix, int slot)
     {
         return Path.Combine(Application.persistentDataPath, $"{prefix}{slot}.json");

@@ -3334,9 +3334,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rootPanel: {fileID: 444638899}
   tabGlossary: {fileID: 0}
-  tabCharacters: {fileID: 0}
+  tabCharacters: {fileID: 20980345}
   glossaryViewer: {fileID: 0}
-  characterViewer: {fileID: 0}
+  characterViewer: {fileID: 444638901}
 --- !u!1 &310317560
 GameObject:
   m_ObjectHideFlags: 0

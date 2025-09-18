@@ -38,7 +38,7 @@ public sealed class CharacterViewer : MonoBehaviour
     public CharacterVisibilityDatabase visibilityDb;
 
     [Header("Paths")]
-    public string visibilityDbPath = "StoryText/character_visibility"; // ★ 경로 노출
+    public string visibilityDbPath = "StoryText/characterVisibility"; // ★ 경로 노출
 
     int startIndex;
     bool opened;
@@ -112,7 +112,10 @@ public sealed class CharacterViewer : MonoBehaviour
         else
         {
             int autoId = autoFocusOwnedOnOpen ? FindFirstOwnedOnPage() : -1;
-            if (autoId >= 0) ShowDetail(autoId);
+            if (autoId >= 0)
+            {
+                ShowDetail(autoId);
+            }
             else SetDetailUnknown();
         }
     }

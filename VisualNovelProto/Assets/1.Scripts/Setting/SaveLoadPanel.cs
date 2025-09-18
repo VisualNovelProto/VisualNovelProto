@@ -151,14 +151,16 @@ public sealed class SaveLoadPanel : MonoBehaviour
             {
                 confirm.Open($"Load slot {v.slotIndex:00} ?", () =>
                 {
-                    if (mgr.LoadManual(v.slotIndex)) Close();
+                    SaveLoadManager.Instance?.RequestLoadFromLobby(v.slotIndex);
+                    Close();
                 });
             }
             else // auto
             {
                 confirm.Open($"Load autosave {v.slotIndex:00} ?", () =>
                 {
-                    if (mgr.LoadAutosaveSlot(v.slotIndex)) Close();
+                    SaveLoadManager.Instance?.RequestLoadAutoFromLobby(v.slotIndex);
+                    Close();
                 });
             }
         }

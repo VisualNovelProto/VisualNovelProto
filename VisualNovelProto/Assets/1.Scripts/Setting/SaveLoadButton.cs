@@ -13,6 +13,6 @@ public class SaveLoadButton : MonoBehaviour
 
     public void OnClickLoad()
     {
-        SaveLoadManager.Instance?.LoadManual(slot);
+        SaveLoadManager.Instance?.RequestLoadFromLobby(slot);
     }
 }

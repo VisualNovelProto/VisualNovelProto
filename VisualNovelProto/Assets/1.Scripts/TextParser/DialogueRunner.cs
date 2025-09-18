@@ -69,6 +69,7 @@ public sealed class DialogueRunner : MonoBehaviour
             return false;
 
         flags.SetAll(db.flagsPool, current.flagsSetOffset, current.flagsSetCount);
+        GlobalFlags.AddRange(db.flagsPool, current.flagsSetOffset, current.flagsSetCount);
 
         hasCurrent = true;
 
@@ -142,6 +143,7 @@ public sealed class DialogueRunner : MonoBehaviour
         ref readonly Choice ch = ref span[index];
 
         flags.SetAll(db.flagsPool, ch.setOffset, ch.setCount);
+        GlobalFlags.AddRange(db.flagsPool, ch.setOffset, ch.setCount);
 
         if (ch.gotoNodeId >= 0)
         {
