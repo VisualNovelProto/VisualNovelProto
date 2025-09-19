@@ -61,21 +61,26 @@ public sealed class CollectionsPanel : MonoBehaviour
     void EnsureBoundAndReload()
     {
         var root = GameRoot.Instance;
-        if (!root) { Debug.LogWarning("[Collections] GameRoot missing"); return; }
+        if (!root)
+        {
+            Debug.LogWarning("[Collections] GameRoot missing");
+            return;
+        }
 
-        // 항상 GameRoot의 단일 DB를 보게
+        // (1) 뷰어가 전역 DB를 바라보게 강제
         if (glossaryViewer && glossaryViewer.gdb != root.glossaryDb)
-            glossaryViewer.gdb = root.glossaryDb; // GlossaryViewer는 Bind 없음
-        if (characterViewer && characterViewer.db != root.characterDb)
-            characterViewer.Bind(root.characterDb);
+            glossaryViewer.gdb = root.glossaryDb; // GlossaryViewer는 Bind가 없음. 필드 주입
 
-        // PlayerPrefs → DB로 소유상태 재적용(가벼워요)
+        if (characterViewer && characterViewer.db != root.characterDb)
+            characterViewer.Bind(root.characterDb); // CharacterViewer는 Bind 제공
+
+        // (2) 전역 소유 상태 재적용(세션 중 새로 해금됐을 수 있으니 가볍게 동기화)
         GlobalCodex.LoadInto(root.glossaryDb, root.characterDb);
 
-        // (디버그)
+        // (3) 디버그 ? 로비에서 ever 상태가 실제로 잡혔는지 확인
         int ownedChars = 0;
         for (int i = 0; i < root.characterDb.entryCount; i++)
             if (root.characterDb.owned.Has(i)) ownedChars++;
-        Debug.Log($"[Collections] bound. ownedChars={ownedChars} dbRefEq={(characterViewer && characterViewer.db == root.characterDb)}");
+        Debug.Log($"[Collections] bound to GameRoot DB. ownedChars={ownedChars}");
     }
 }

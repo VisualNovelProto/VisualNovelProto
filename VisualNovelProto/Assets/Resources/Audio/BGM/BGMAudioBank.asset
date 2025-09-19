@@ -19,3 +19,6 @@ MonoBehaviour:
   - key: NervousBGM
     clip: {fileID: 8300000, guid: dc8f14fcebc2de24290dbd9632e148c4, type: 3}
     volume: 0
+  - key: LobbyBgm
+    clip: {fileID: 8300000, guid: dc8f14fcebc2de24290dbd9632e148c4, type: 3}
+    volume: 0

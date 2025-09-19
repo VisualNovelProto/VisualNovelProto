@@ -23,6 +23,9 @@ public sealed class OptionsPanel : MonoBehaviour
     public Slider slBgm;
     public Slider slSfx;
     public Slider slVoice;                // 보이스 채널 사용시 (AudioManager에 세터 필요)
+    float valBgm;
+    float valSfx;
+    float valVoice;
 
     [Header("Gameplay / Input")]
     public Slider slMouseSens;            // 0.1~5.0 등
@@ -54,6 +57,9 @@ public sealed class OptionsPanel : MonoBehaviour
         // 드롭다운 옵션이 비어있다면 코드로 기본 항목을 깔아도 됨(원하면 주석 해제)
         // InitDropdownsIfEmpty();
         root.SetActive(false);
+        valBgm = settings.data.bgmVolume;
+        valSfx = settings.data.sfxVolume;
+        valVoice = settings.data.voiceVolume;
     }
 
     // === 열고/닫기 (모달) ===
@@ -95,16 +101,21 @@ public sealed class OptionsPanel : MonoBehaviour
         settings.Save();
         // 적용
         audioMgr?.SetMasterVolume(settings.data.masterVolume);
+        OnBgmVolume(valBgm);
+        OnSfxVolume(valSfx);
+        OnVoiceVolume(valVoice);
     }
 
-    public void OnBgmVolume(float v) { settings?.OnChangeBgmVolume(v); }
-    public void OnSfxVolume(float v) { settings?.OnChangeSfxVolume(v); }
+    public void OnBgmVolume(float v) { valBgm = v; settings?.OnChangeBgmVolume(v * settings.data.masterVolume); }
+    public void OnSfxVolume(float v) { valSfx = v; settings?.OnChangeSfxVolume(v * settings.data.masterVolume); }
     public void OnVoiceVolume(float v)
     {
         if (!EnsureManagers()) return;
+
+        valVoice = v;
         settings.data.voiceVolume = Mathf.Clamp01(v);
         settings.Save();
-        audioMgr?.SetVoiceMasterVolume(settings.data.voiceVolume); // AudioManager에 세터 추가 필요
+        audioMgr?.SetVoiceMasterVolume(settings.data.voiceVolume * settings.data.masterVolume); // AudioManager에 세터 추가 필요
     }
 
     public void OnMouseSensitivity(float v)

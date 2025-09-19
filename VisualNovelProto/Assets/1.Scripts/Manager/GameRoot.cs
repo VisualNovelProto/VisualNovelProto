@@ -71,11 +71,21 @@ public sealed class GameRoot : MonoBehaviour
         if (saveLoad.ui == null) saveLoad.ui = FindObjectOfType<DialogueUI>();
         if (saveLoad.runner == null) saveLoad.runner = FindObjectOfType<DialogueRunner>();
 
+        // (1) 로비/메뉴 씬이면 전역 공개 플래그로 바인딩
+        if (saveLoad.runner == null)
+        {
+            StoryFlags.Bind(GlobalFlags.Has);
+            // 전역 소유 상태를 루트 DB에 재적용(혹시 세션 중 더 해금되었을 수 있으므로)
+            GlobalCodex.LoadInto(glossaryDb, characterDb);
+            Debug.Log("[GameRoot] Bound StoryFlags to GlobalFlags.Has and reloaded GlobalCodex for lobby/menu.");
+
+            audioManager.SetLobbyBgm();
+        }
+
         // 새 씬에서 옵션 즉시 재적용(특히 해상도/캔버스 스케일, 타이핑 등)
         settings.ApplyAll();
         ChatLogManager.Instance.Clear();
         UiModalGate.Reset();
     }
-
     void OnApplicationQuit() => GlobalCodex.SaveFrom(glossaryDb, characterDb);
 }

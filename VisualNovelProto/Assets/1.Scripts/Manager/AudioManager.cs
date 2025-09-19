@@ -48,6 +48,8 @@ public sealed class AudioManager : MonoBehaviour
             a.volume = 0f;
             bgm[i] = a;
         }
+        //최초 Awake 시점이 로비씬에서이므로, 여기서 로비씬 브금 켜기
+        SetLobbyBgm();
 
         // SFX 풀
         sfx = new AudioSource[Mathf.Max(1, sfxVoices)];
@@ -96,7 +98,6 @@ public sealed class AudioManager : MonoBehaviour
         clip = Resources.Load<AudioClip>(res);
         CrossfadeTo(clip, 1f, fade < 0 ? bgmDefaultFade : fade);
     }
-
     public void StopBgm(float fade = -1f)
     {
         float f = (fade < 0f ? bgmDefaultFade : fade);
@@ -105,7 +106,10 @@ public sealed class AudioManager : MonoBehaviour
         bgm[back].Stop(); bgm[back].clip = null; bgm[back].volume = 0f;
         bgmFadeT = 0f; bgmFadeDur = f; bgmFading = true;
     }
-
+    public void SetLobbyBgm()
+    {
+        PlayBgm("LobbyBgm");
+    }
     void CrossfadeTo(AudioClip clip, float vol, float fade)
     {
         if (clip == null) { StopBgm(fade); return; }
