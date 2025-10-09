@@ -5231,6 +5231,7 @@ MonoBehaviour:
   closeButton: {fileID: 1104076321}
   linesToShow: 50
   showNodeId: 0
+  animator: {fileID: 0}
 --- !u!4 &249907686
 Transform:
   m_ObjectHideFlags: 0
@@ -6234,6 +6235,7 @@ GameObject:
   - component: {fileID: 288775913}
   - component: {fileID: 288775915}
   - component: {fileID: 288775914}
+  - component: {fileID: 288775917}
   - component: {fileID: 288775916}
   m_Layer: 5
   m_Name: CharacterSheet
@@ -6376,6 +6378,76 @@ MonoBehaviour:
   db: {fileID: 0}
   visibilityDb: {fileID: 0}
   visibilityDbPath: StoryText/characterVisibility
+  animator: {fileID: 0}
+--- !u!114 &288775917
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288775912}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbd3cfac8506fe743a0d20ada7cc7936, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 1
+  openDuration: 0.25
+  closeDuration: 0.22
+  openCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  closeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  popStartScale: 0.95
+  slideFrom: 1
+  slidePixels: 96
+  startHidden: 1
+  ignoreCancelDuringOpen: 1
+  blockRaycastDuringAnim: 1
 --- !u!1 &316823616
 GameObject:
   m_ObjectHideFlags: 0
@@ -7736,6 +7808,7 @@ GameObject:
   - component: {fileID: 411678586}
   - component: {fileID: 411678585}
   - component: {fileID: 411678588}
+  - component: {fileID: 411678589}
   m_Layer: 5
   m_Name: LogPanel
   m_TagString: Untagged
@@ -7833,6 +7906,75 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &411678589
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 411678583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbd3cfac8506fe743a0d20ada7cc7936, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 1
+  openDuration: 0.25
+  closeDuration: 0.22
+  openCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  closeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  popStartScale: 0.95
+  slideFrom: 1
+  slidePixels: 96
+  startHidden: 1
+  ignoreCancelDuringOpen: 1
+  blockRaycastDuringAnim: 1
 --- !u!1 &415366807
 GameObject:
   m_ObjectHideFlags: 0
@@ -12480,6 +12622,7 @@ MonoBehaviour:
   thumbSize: {x: 512, y: 288}
   visualsCanvas: {fileID: 1091528190}
   visualsCaptureCamera: {fileID: 764172589}
+  animator: {fileID: 0}
 --- !u!1 &646878903
 GameObject:
   m_ObjectHideFlags: 0
@@ -13353,6 +13496,7 @@ GameObject:
   - component: {fileID: 703636705}
   - component: {fileID: 703636707}
   - component: {fileID: 703636706}
+  - component: {fileID: 703636709}
   - component: {fileID: 703636708}
   m_Layer: 5
   m_Name: glossaryPanel
@@ -13485,6 +13629,76 @@ MonoBehaviour:
   - {fileID: 27020043}
   thumbBindings: []
   gdb: {fileID: 0}
+  animator: {fileID: 0}
+--- !u!114 &703636709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 703636704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbd3cfac8506fe743a0d20ada7cc7936, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mode: 1
+  openDuration: 0.25
+  closeDuration: 0.22
+  openCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  closeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  popStartScale: 0.95
+  slideFrom: 1
+  slidePixels: 96
+  startHidden: 1
+  ignoreCancelDuringOpen: 1
+  blockRaycastDuringAnim: 1
 --- !u!1 &703807497
 GameObject:
   m_ObjectHideFlags: 0

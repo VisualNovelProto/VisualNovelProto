@@ -17,6 +17,8 @@ public sealed class LogViewer : MonoBehaviour
 
     // 재사용 버퍼(동적생성 최소화)
     ChatLogManager.LogEntry[] tmp;
+    [SerializeField] PanelAnimator animator;
+    bool opened;
 
     void Awake()
     {
@@ -24,21 +26,28 @@ public sealed class LogViewer : MonoBehaviour
         if (openButton != null) { openButton.onClick.RemoveAllListeners(); openButton.onClick.AddListener(Open); }
         if (closeButton != null) { closeButton.onClick.RemoveAllListeners(); closeButton.onClick.AddListener(Close); }
         tmp = new ChatLogManager.LogEntry[Mathf.Max(8, linesToShow)];
+
+        if (!animator && panel) animator = panel.GetComponent<PanelAnimator>();
     }
 
     public void Open()
     {
         if (panel != null)
             panel.SetActive(true);
-        UiModalGate.Push(Close); // 모달 열림. :contentReference[oaicite:2]{index=2}
+        if (!opened) { UiModalGate.Push(Close); opened = true; }
+        animator?.PlayOpen();
         Rebuild();
     }
 
     public void Close()
     {
-        if (panel != null)
-            panel.SetActive(false);
-        UiModalGate.Pop();  // 모달 닫힘. :contentReference[oaicite:3]{index=3}
+        StartCoroutine(CoClose());
+    }
+    System.Collections.IEnumerator CoClose()
+    {
+        if (animator) yield return animator.PlayClose();          // ★ 애니 종료까지 대기
+        if (opened) { UiModalGate.Pop(); opened = false; }        // ★ Pop (짝 맞추기)
+        if (panel) panel.SetActive(false);
     }
 
     public void Rebuild()

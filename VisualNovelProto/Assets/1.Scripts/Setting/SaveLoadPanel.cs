@@ -1,3 +1,4 @@
+using System.Collections;
 using System.IO;
 using TMPro;
 using UnityEngine;
@@ -33,6 +34,7 @@ public sealed class SaveLoadPanel : MonoBehaviour
     bool viewingManual = true;
 
     SaveSlotView[] pool;
+    [SerializeField] PanelAnimator animator;
 
     void Awake()
     {
@@ -41,6 +43,12 @@ public sealed class SaveLoadPanel : MonoBehaviour
 
         if (tabManual) tabManual.onValueChanged.AddListener(OnTabManual);
         if (tabAuto) tabAuto.onValueChanged.AddListener(OnTabAuto);
+
+        if (!animator)
+        {
+            animator = GetComponent<PanelAnimator>();
+            if (animator == null) animator = gameObject.AddComponent<PanelAnimator>();
+        }
     }
 
     public void Open(Mode m)
@@ -57,15 +65,21 @@ public sealed class SaveLoadPanel : MonoBehaviour
 
         BuildPool();
         Rebuild();
+        animator?.PlayOpen();
     }
 
     public void Close()
     {
+        StartCoroutine(CoClose());
+    }
+    IEnumerator CoClose()
+    {
+        if (animator) yield return animator.PlayClose();
         root.SetActive(false);
         UiModalGate.Pop();
         InputRouter.Instance?.SuppressAdvance(0.12f);
+        gameObject.SetActive(false);
     }
-
     void OnTabManual(bool on)
     {
         if (!on) return;

@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 public sealed class CharacterViewer : MonoBehaviour
 {
@@ -40,6 +41,9 @@ public sealed class CharacterViewer : MonoBehaviour
     [Header("Paths")]
     public string visibilityDbPath = "StoryText/characterVisibility"; // ★ 경로 노출
 
+    [SerializeField]
+    PanelAnimator animator;
+
     int startIndex;
     bool opened;
 
@@ -48,6 +52,11 @@ public sealed class CharacterViewer : MonoBehaviour
         if (rootPanel != null) rootPanel.SetActive(false);
         else gameObject.SetActive(false);
         SetDetailUnknown(); // 에디터 텍스트 숨김
+        if (!animator)
+        {
+            animator = GetComponent<PanelAnimator>();
+            if (animator == null) animator = gameObject.AddComponent<PanelAnimator>();
+        }
     }
 
     void Update()
@@ -64,7 +73,7 @@ public sealed class CharacterViewer : MonoBehaviour
             closeButton.onClick.RemoveAllListeners();
             closeButton.onClick.AddListener(Close);
         }
-        // ★ 항상 로드 시도(없으면 경고 1회)
+        // 항상 로드 시도(없으면 경고 1회)
         if (visibilityDb == null)
         {
             visibilityDb = CharacterVisibilityDatabase.LoadFromResources(visibilityDbPath);
@@ -118,14 +127,21 @@ public sealed class CharacterViewer : MonoBehaviour
             }
             else SetDetailUnknown();
         }
+        if (animator) animator.PlayOpen();
     }
 
     public void Close()
     {
+        StartCoroutine(CoClose());
+    }
+    IEnumerator CoClose()
+    {
+        if (animator) yield return animator.PlayClose();
         if (rootPanel != null) rootPanel.SetActive(false);
         else gameObject.SetActive(false);
 
         if (opened) { UiModalGate.Pop(); opened = false; }
+        if (rootPanel) rootPanel.SetActive(false);
     }
 
     public void NextPage() { if (db == null) return; startIndex = NextStart(startIndex); Refresh(); SetDetailUnknown(); }
@@ -198,7 +214,7 @@ public sealed class CharacterViewer : MonoBehaviour
         int fPenaltyDesc = hv ? v.penaltyDescFlag : 0;
         int fThumb = hv ? v.thumbFlag : 0;
 
-        // ★ 변경점: "<= 0" 이면 즉시 공개
+        // 변경점: "<= 0" 이면 즉시 공개
         bool showTitle = owned && (fTitle <= 0 || StoryFlags.Has(fTitle));
         bool showDesc = owned && (fDesc <= 0 || StoryFlags.Has(fDesc));
         bool showAbilityName = owned && (fAbilityName <= 0 || StoryFlags.Has(fAbilityName));

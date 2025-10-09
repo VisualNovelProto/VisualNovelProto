@@ -20,5 +20,5 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: dc8f14fcebc2de24290dbd9632e148c4, type: 3}
     volume: 0
   - key: LobbyBgm
-    clip: {fileID: 8300000, guid: dc8f14fcebc2de24290dbd9632e148c4, type: 3}
+    clip: {fileID: 8300000, guid: 4b8cd9f81c9a27141988b93b54f95a6a, type: 3}
     volume: 0

@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 public sealed class GlossaryViewer : MonoBehaviour
 {
@@ -31,12 +32,15 @@ public sealed class GlossaryViewer : MonoBehaviour
     public GlossaryDatabase gdb;
     bool opened;                          // 중복 Push/Pop 방지
 
+    [SerializeField] PanelAnimator animator;
     void Awake()
     {
         // 시작 시 항상 비활성화(에디터에서 켜져 있어도 꺼짐)
         if (rootPanel != null) rootPanel.SetActive(false);
         else gameObject.SetActive(false);
         SetDetailUnknown();
+        if (!animator) animator = GetComponent<PanelAnimator>();
+        else animator = gameObject.AddComponent<PanelAnimator>();
     }
 
     void OnEnable()
@@ -54,8 +58,6 @@ public sealed class GlossaryViewer : MonoBehaviour
         var kb = Keyboard.current;
         if (kb != null && kb.escapeKey.wasPressedThisFrame) Close();
     }
-
-
     void OnDisable()
     {
         // 강제 종료 상황에서도 게이트 복구
@@ -93,14 +95,21 @@ public sealed class GlossaryViewer : MonoBehaviour
             if (autoId >= 0) ShowDetail(autoId);
             else SetDetailUnknown();
         }
+        animator?.PlayOpen();
     }
 
     public void Close()
     {
+        StartCoroutine(CoClose());
+    }
+    IEnumerator CoClose()
+    {
+        if (animator) yield return animator.PlayClose();
         if (rootPanel != null) rootPanel.SetActive(false);
         else gameObject.SetActive(false);
 
         if (opened) { UiModalGate.Pop(); opened = false; }    // ★ 스토리 입력 해제
+        if (rootPanel) rootPanel.SetActive(false);
     }
 
     public void NextPage()
@@ -180,7 +189,7 @@ public sealed class GlossaryViewer : MonoBehaviour
     void SetDetailUnknown()
     {
         if (titleText) titleText.text = "???";
-        if (descText) descText.text = "아직 해금되지 않았습니다.";
+        if (descText) descText.text = "수집되지 않은 단어입니다.";
     }
 
     int FindFirstOwnedOnPage()

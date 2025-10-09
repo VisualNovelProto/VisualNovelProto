@@ -158,6 +158,7 @@ public sealed class DialogueUI : MonoBehaviour
             speakerText.ForceMeshUpdate();
             if (speakerOverlay != null) { speakerOverlay.Rebuild(); speakerOverlay.SetVisibleCharacterCount(int.MaxValue); }
             if (autoUnlockCharacterOnAppear) AutoUnlockFromTMP(speakerText);
+            if(autoUnlockGlossaryOnAppear) AutoUnlockFromTMP(bodyText);
         }
 
         // 2) 본문: 링크 하이라이트 삽입 → 타이핑 준비
@@ -582,6 +583,8 @@ public sealed class DialogueUI : MonoBehaviour
         bodyText.maxVisibleCharacters = int.MaxValue;
         RefreshOverlaysAfterTyping();
         if (bodyOverlay != null) bodyOverlay.SetVisibleCharacterCount(int.MaxValue);
+
+        AutoUnlockFromTMP(bodyText);
     }
 
     // 입력 처리에서 호출: 진행 키/클릭
@@ -658,6 +661,7 @@ public sealed class DialogueUI : MonoBehaviour
         isTyping = false;
         typingCo = null;
         RefreshOverlaysAfterTyping();
+        AutoUnlockFromTMP(bodyText);
     }
 
 

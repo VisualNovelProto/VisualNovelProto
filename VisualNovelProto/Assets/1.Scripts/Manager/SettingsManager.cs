@@ -34,7 +34,6 @@ public sealed class SettingsManager : MonoBehaviour
     public SettingsData data;
 
     string filePath;
-    float master = 1f, voiceMaster = 1f;
 
     void Reset()
     {
