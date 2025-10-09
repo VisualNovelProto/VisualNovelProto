@@ -741,7 +741,25 @@ public sealed class DialogueUI : MonoBehaviour
             runner.Choose(index);
     }
 
-    void ShowContinueHint(bool show) { /* TODO */ }
+    void ShowContinueHint(bool show)
+    {
+        if (continueWholeScreenButton == null)
+            return;
+
+        continueWholeScreenButton.interactable = show;
+
+        var graphics = continueWholeScreenButton.GetComponentsInChildren<Graphic>(true);
+        for (int i = 0; i < graphics.Length; i++)
+        {
+            if (graphics[i] == null)
+                continue;
+
+            graphics[i].raycastTarget = show;
+        }
+
+        if (continueWholeScreenButton.gameObject.activeSelf != show)
+            continueWholeScreenButton.gameObject.SetActive(show);
+    }
 
     Sprite FindSprite(SpriteBinding[] arr, string key)
     {
