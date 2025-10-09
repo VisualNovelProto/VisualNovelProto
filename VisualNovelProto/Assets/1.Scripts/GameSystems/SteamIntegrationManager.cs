@@ -289,7 +289,7 @@ public sealed class SteamIntegrationManager : MonoBehaviour
 #endif
     }
 
-    public static bool TrySyncCloudSaveToLocal(string localPath)
+    public static bool TrySyncCloudSaveToLocalGlobal(string localPath)
     {
         return HasInstance && Instance.TrySyncCloudSaveToLocal(localPath);
     }
