@@ -337,7 +337,7 @@ public sealed class SaveLoadManager : MonoBehaviour
             File.WriteAllText(path, json);
 
             SteamIntegrationManager.TryUploadSaveToCloud(path, json);
-            SteamIntegrationManager.TrySyncCloudSaveToLocal(path);
+            SteamIntegrationManager.TrySyncCloudSaveToLocalGlobal(path);
 
             _lastSavedNodeId = nodeId;
             // 오토세이브는 회전(로테이션) 관리
@@ -380,7 +380,7 @@ public sealed class SaveLoadManager : MonoBehaviour
 
     bool LoadFromPath(string path, bool jumpToNode, bool clearBeforeApply)
     {
-        SteamIntegrationManager.TrySyncCloudSaveToLocal(path);
+        SteamIntegrationManager.TrySyncCloudSaveToLocalGlobal(path);
         if (runner == null || ui == null) { Debug.LogWarning("Load: runner/ui not set."); return false; }
         if (!File.Exists(path)) { Debug.LogWarning($"Load: file not found: {path}"); return false; }
 
