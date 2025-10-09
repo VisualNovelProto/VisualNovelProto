@@ -199,8 +199,6 @@ public sealed class SaveLoadManager : MonoBehaviour
             TryPerformPendingLoad();
     }
 
-        SteamIntegrationManager.TrySyncCloudSaveToLocal(path);
-
     // 로비 등에서 호출(오토 슬롯)
     public void RequestLoadAutoFromLobby(int slot)
     {
@@ -314,10 +312,6 @@ public sealed class SaveLoadManager : MonoBehaviour
                 // 임시 버퍼 크기 확보
                 if (_tmpLogBuf == null || _tmpLogBuf.Length < want)
                     _tmpLogBuf = new ChatLogManager.LogEntry[want];
-
-            SteamIntegrationManager.TryUploadSaveToCloud(path, json);
-
-        SteamIntegrationManager.TrySyncCloudSaveToLocal(path);
                 int got = lm.CopyLatest(_tmpLogBuf, want); // 오래된→최신 순서로 채워짐
                 if (got > 0)
                 {
@@ -341,6 +335,9 @@ public sealed class SaveLoadManager : MonoBehaviour
             string path = PathOf(isAuto ? autosavePrefix : manualPrefix, slot);
             var json = JsonUtility.ToJson(data, prettyPrint: false);
             File.WriteAllText(path, json);
+
+            SteamIntegrationManager.TryUploadSaveToCloud(path, json);
+            SteamIntegrationManager.TrySyncCloudSaveToLocal(path);
 
             _lastSavedNodeId = nodeId;
             // 오토세이브는 회전(로테이션) 관리
@@ -383,6 +380,7 @@ public sealed class SaveLoadManager : MonoBehaviour
 
     bool LoadFromPath(string path, bool jumpToNode, bool clearBeforeApply)
     {
+        SteamIntegrationManager.TrySyncCloudSaveToLocal(path);
         if (runner == null || ui == null) { Debug.LogWarning("Load: runner/ui not set."); return false; }
         if (!File.Exists(path)) { Debug.LogWarning($"Load: file not found: {path}"); return false; }
 
