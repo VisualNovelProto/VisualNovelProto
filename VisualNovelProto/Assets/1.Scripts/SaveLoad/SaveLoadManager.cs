@@ -5,25 +5,25 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// DDOL(Àü¿ª) ¼¼ÀÌºê/·Îµå + ¿ÀÅä¼¼ÀÌºê ¸Å´ÏÀú
-/// - Manual ½½·Ô ÀúÀå/·Îµå
-/// - Autosave(ÁÖ±â/Ã©ÅÍ Á¾·á)
-/// - ½½·Ô ¸ŞÅ¸(Å¸ÀÓ½ºÅÆÇÁ, ÇÃ·¹ÀÌÅ¸ÀÓ, ¾À/Ã©ÅÍ/³ëµå) Á¶È¸
-/// - ¾À ÀçÁøÀÔ ½Ã DialogueRunner/DialogueUI Àç¹ÙÀÎµù
+/// DDOL(ì „ì—­) ì„¸ì´ë¸Œ/ë¡œë“œ + ì˜¤í† ì„¸ì´ë¸Œ ë§¤ë‹ˆì €
+/// - Manual ìŠ¬ë¡¯ ì €ì¥/ë¡œë“œ
+/// - Autosave(ì£¼ê¸°/ì±•í„° ì¢…ë£Œ)
+/// - ìŠ¬ë¡¯ ë©”íƒ€(íƒ€ì„ìŠ¤íƒ¬í”„, í”Œë ˆì´íƒ€ì„, ì”¬/ì±•í„°/ë…¸ë“œ) ì¡°íšŒ
+/// - ì”¬ ì¬ì§„ì… ì‹œ DialogueRunner/DialogueUI ì¬ë°”ì¸ë”©
 /// </summary>
 public sealed class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager Instance { get; private set; }
 
-    [Header("¾À Ã¼Å©")]
-    [SerializeField] string gameplaySceneName = "InGameStoryScene"; // ÀÎ°ÔÀÓ ¾À ÀÌ¸§
+    [Header("ì”¬ ì²´í¬")]
+    [SerializeField] string gameplaySceneName = "InGameStoryScene"; // ì¸ê²Œì„ ì”¬ ì´ë¦„
     enum PendingKind { None, Manual, Auto }
     PendingKind _pendingKind = PendingKind.None;
     int _pendingLoadSlot = -1;
 
-    [Header("Bindings (¾À ÀÇÁ¸)")]
-    public DialogueRunner runner; // ¾À ·Îµå¸¶´Ù Çãºê·Î ÁÖÀÔ
-    public DialogueUI ui;         // glossary/characters Á¢±Ù¿ë(¾À ·ÎÄÃ)
+    [Header("Bindings (ì”¬ ì˜ì¡´)")]
+    public DialogueRunner runner; // ì”¬ ë¡œë“œë§ˆë‹¤ í—ˆë¸Œë¡œ ì£¼ì…
+    public DialogueUI ui;         // glossary/characters ì ‘ê·¼ìš©(ì”¬ ë¡œì»¬)
 
     [Header("File Settings")]
     public string manualPrefix = "save_";
@@ -32,58 +32,58 @@ public sealed class SaveLoadManager : MonoBehaviour
 
     [Header("Autosave")]
     public bool enableIntervalAutosave = true;
-    public float autosaveIntervalSec = 180f; // 3ºĞ
+    public float autosaveIntervalSec = 180f; // 3ë¶„
     public bool enableChapterEndAutosave = true;
 
     [Header("Scan Limits")]
-    public int maxFlagsToScan = 2048; // ÆÀ ±ÔÄ¢: ³Ë³ËÈ÷, Ç® Àç»ç¿ë
+    public int maxFlagsToScan = 2048; // íŒ€ ê·œì¹™: ë„‰ë„‰íˆ, í’€ ì¬ì‚¬ìš©
 
     [Header("Time Source")]
     public bool useUnscaledTime = true;
     [Header("Log Snapshot")]
-    public int logTailCount = 40; // ¼¼ÀÌºê¿¡ ÇÔ²² ÀúÀåÇÒ ¹é·Î±× ÁÙ ¼ö (±ÇÀå 30~50)
+    public int logTailCount = 40; // ì„¸ì´ë¸Œì— í•¨ê»˜ ì €ì¥í•  ë°±ë¡œê·¸ ì¤„ ìˆ˜ (ê¶Œì¥ 30~50)
 
-    ChatLogManager.LogEntry[] _tmpLogBuf; // µ¿ÀûÇÒ´ç ÃÖ¼ÒÈ­¿ë ÀÓ½Ã ¹öÆÛ
+    ChatLogManager.LogEntry[] _tmpLogBuf; // ë™ì í• ë‹¹ ìµœì†Œí™”ìš© ì„ì‹œ ë²„í¼
 
-    // --- Àç»ç¿ë ¹öÆÛ (µ¿Àû »ı¼º ÃÖ¼ÒÈ­) ---
+    // --- ì¬ì‚¬ìš© ë²„í¼ (ë™ì  ìƒì„± ìµœì†Œí™”) ---
     readonly List<int> tmpFlags = new List<int>(4096);
     readonly List<int> tmpGlossary = new List<int>(1024);
     readonly List<int> tmpCharacters = new List<int>(1024);
 
-    // --- ³»ºÎ »óÅÂ ---
-    float _timer;                      // ¿ÀÅä¼¼ÀÌºê Å¸ÀÌ¸Ó
-    int _lastSavedNodeId = -1;       // µ¿ÀÏ ³ëµå ¹İº¹ ÀúÀå ¹æÁö
-    int _lastObservedNodeId = -1;    // ÁøÇà °¨Áö
-    float _playtimeSec;                // ´©Àû ÇÃ·¹ÀÌÅ¸ÀÓ(¼¼¼Ç ³»)
+    // --- ë‚´ë¶€ ìƒíƒœ ---
+    float _timer;                      // ì˜¤í† ì„¸ì´ë¸Œ íƒ€ì´ë¨¸
+    int _lastSavedNodeId = -1;       // ë™ì¼ ë…¸ë“œ ë°˜ë³µ ì €ì¥ ë°©ì§€
+    int _lastObservedNodeId = -1;    // ì§„í–‰ ê°ì§€
+    float _playtimeSec;                // ëˆ„ì  í”Œë ˆì´íƒ€ì„(ì„¸ì…˜ ë‚´)
     DateTime _sessionStart;
 
     [System.Serializable]
     public struct LogLine
     {
-        public int nodeId;          // ¼±ÅÃ(¾ğ¾î ¹Ù²î¸é Àç»ı¼º¿ë)
-        public string speaker;      // È­¸é¿¡ º¸ÀÎ ÃÖÁ¾ ¹®ÀÚ¿­(¸µÅ©/»ö»ó Æ÷ÇÔ OK)
-        public string body;         // È­¸é¿¡ º¸ÀÎ ÃÖÁ¾ ¹®ÀÚ¿­
+        public int nodeId;          // ì„ íƒ(ì–¸ì–´ ë°”ë€Œë©´ ì¬ìƒì„±ìš©)
+        public string speaker;      // í™”ë©´ì— ë³´ì¸ ìµœì¢… ë¬¸ìì—´(ë§í¬/ìƒ‰ìƒ í¬í•¨ OK)
+        public string body;         // í™”ë©´ì— ë³´ì¸ ìµœì¢… ë¬¸ìì—´
     }
 
-    // --- ÀúÀå µ¥ÀÌÅÍ Æ÷¸Ë ---
+    // --- ì €ì¥ ë°ì´í„° í¬ë§· ---
     [Serializable]
     public struct SaveData
     {
-        public int version;               // Æ÷¸Ë ¹öÀü (ÁõºĞ)
+        public int version;               // í¬ë§· ë²„ì „ (ì¦ë¶„)
         public string timestamp;          // "yyyy-MM-dd HH:mm:ss"
-        public string sceneName;          // ¾À ÀÌ¸§
-        public int nodeId;                // ÁøÇà ÁöÁ¡
-        public int chapterId;             // (¾øÀ¸¸é -1) Ã©ÅÍ ½Äº°ÀÚ
-        public float playtimeSec;         // ´©Àû ÇÃ·¹ÀÌÅ¸ÀÓ(¼±ÅÃ)
+        public string sceneName;          // ì”¬ ì´ë¦„
+        public int nodeId;                // ì§„í–‰ ì§€ì 
+        public int chapterId;             // (ì—†ìœ¼ë©´ -1) ì±•í„° ì‹ë³„ì
+        public float playtimeSec;         // ëˆ„ì  í”Œë ˆì´íƒ€ì„(ì„ íƒ)
         public string saveType;           // "Manual" / "Auto" / "ChapterEnd"
 
-        public int[] flags;               // ÄÑÁø ÇÃ·¡±× id
-        public int[] glossary;            // ¼ÒÀ¯ ±Û·Î¼­¸® id
-        public int[] characters;          // ¼ÒÀ¯ Ä³¸¯ÅÍ id
+        public int[] flags;               // ì¼œì§„ í”Œë˜ê·¸ id
+        public int[] glossary;            // ì†Œìœ  ê¸€ë¡œì„œë¦¬ id
+        public int[] characters;          // ì†Œìœ  ìºë¦­í„° id
         public LogLine[] logTail;
     }
 
-    // === ¼ö¸íÁÖ±â ===
+    // === ìˆ˜ëª…ì£¼ê¸° ===
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -103,7 +103,7 @@ public sealed class SaveLoadManager : MonoBehaviour
 
     void OnSceneLoaded(Scene s, LoadSceneMode m)
     {
-        // ¾À Çãºê¿¡¼­ ÀÇÁ¸ ·¹ÆÛ·±½º ÁÖÀÔ
+        // ì”¬ í—ˆë¸Œì—ì„œ ì˜ì¡´ ë ˆí¼ëŸ°ìŠ¤ ì£¼ì…
         var hub = FindObjectOfType<SceneRefHub>();
         if (hub != null)
         {
@@ -111,7 +111,7 @@ public sealed class SaveLoadManager : MonoBehaviour
             ui = hub.dialogueUI;
         }
 
-        // ¾À ¹Ù²î¸é ¿ÀÅä¼¼ÀÌºê Å¸ÀÌ¸Ó/ÁøÇà °¨Áö ÃÊ±âÈ­
+        // ì”¬ ë°”ë€Œë©´ ì˜¤í† ì„¸ì´ë¸Œ íƒ€ì´ë¨¸/ì§„í–‰ ê°ì§€ ì´ˆê¸°í™”
         _timer = 0f;
         _lastObservedNodeId = SafeGetNodeId();
 
@@ -123,17 +123,17 @@ public sealed class SaveLoadManager : MonoBehaviour
         float dt = useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
         _playtimeSec += dt;
 
-        // ÁøÇà °¨Áö
+        // ì§„í–‰ ê°ì§€
         int nid = SafeGetNodeId();
         if (nid >= 0 && nid != _lastObservedNodeId)
         {
             _lastObservedNodeId = nid;
-            _timer = 0f; // ÁøÇàÀÌ ÀÖÀ¸¸é Å¸ÀÌ¸Ó ¸®¼Â(ÂªÀº ½Ã°£ ³» Áßº¹ ÀúÀå ¹æÁö)
+            _timer = 0f; // ì§„í–‰ì´ ìˆìœ¼ë©´ íƒ€ì´ë¨¸ ë¦¬ì…‹(ì§§ì€ ì‹œê°„ ë‚´ ì¤‘ë³µ ì €ì¥ ë°©ì§€)
         }
 
         if (!enableIntervalAutosave) return;
 
-        // ÀÏÁ¤ ½Ã°£ ÀúÀå ¾È ÇßÀ» ¶§ ¿ÀÅä¼¼ÀÌºê
+        // ì¼ì • ì‹œê°„ ì €ì¥ ì•ˆ í–ˆì„ ë•Œ ì˜¤í† ì„¸ì´ë¸Œ
         _timer += dt;
         if (_timer >= autosaveIntervalSec)
         {
@@ -142,21 +142,21 @@ public sealed class SaveLoadManager : MonoBehaviour
         }
     }
 
-    // === ¿ÜºÎ¿¡¼­ È£ÃâÇÒ API ===
+    // === ì™¸ë¶€ì—ì„œ í˜¸ì¶œí•  API ===
 
-    /// <summary>¸Ş´º/¹öÆ°¿¡¼­ È£Ãâ: ¼öµ¿ ÀúÀå</summary>
+    /// <summary>ë©”ë‰´/ë²„íŠ¼ì—ì„œ í˜¸ì¶œ: ìˆ˜ë™ ì €ì¥</summary>
     public bool SaveManual(int slot)
     {
         return SaveInternal(slot, isAuto: false, tag: "Manual");
     }
 
-    /// <summary>¿ÀÅä¼¼ÀÌºê(Ã©ÅÍ Á¾·á ½Ã µî). ½ÇÆĞÇØµµ °ÔÀÓ ÁøÇàÀº °è¼Ó.</summary>
+    /// <summary>ì˜¤í† ì„¸ì´ë¸Œ(ì±•í„° ì¢…ë£Œ ì‹œ ë“±). ì‹¤íŒ¨í•´ë„ ê²Œì„ ì§„í–‰ì€ ê³„ì†.</summary>
     public void SaveAutosave(string tag = "Auto")
     {
         TryAutosave(tag);
     }
 
-    /// <summary>Ã©ÅÍ Á¾·á ½Ã È£Ãâ(½ºÅä¸® ¸Å´ÏÀú/·¯³Ê ÀÌº¥Æ®¿¡¼­)</summary>
+    /// <summary>ì±•í„° ì¢…ë£Œ ì‹œ í˜¸ì¶œ(ìŠ¤í† ë¦¬ ë§¤ë‹ˆì €/ëŸ¬ë„ˆ ì´ë²¤íŠ¸ì—ì„œ)</summary>
     public void NotifyChapterEnd(int chapterId = -1)
     {
         if (!enableChapterEndAutosave) return;
@@ -176,7 +176,7 @@ public sealed class SaveLoadManager : MonoBehaviour
 
     public bool LoadAutosaveLatest(bool jumpToNode = true, bool clearBeforeApply = true)
     {
-        // ÃÖ½Å ¿ÀÅä¼¼ÀÌºê ÆÄÀÏ(¼öÁ¤½Ã°¢ ±âÁØ) Ã£¾Æ ·Îµå
+        // ìµœì‹  ì˜¤í† ì„¸ì´ë¸Œ íŒŒì¼(ìˆ˜ì •ì‹œê° ê¸°ì¤€) ì°¾ì•„ ë¡œë“œ
         var files = Directory.GetFiles(Application.persistentDataPath, autosavePrefix + "*.json");
         string best = null; DateTime bestTime = DateTime.MinValue;
         for (int i = 0; i < files.Length; i++)
@@ -187,7 +187,7 @@ public sealed class SaveLoadManager : MonoBehaviour
         if (string.IsNullOrEmpty(best)) return false;
         return LoadFromPath(best, jumpToNode, clearBeforeApply);
     }
-    // ·Îºñ µî¿¡¼­ È£Ãâ(¼öµ¿ ½½·Ô)
+    // ë¡œë¹„ ë“±ì—ì„œ í˜¸ì¶œ(ìˆ˜ë™ ìŠ¬ë¡¯)
     public void RequestLoadFromLobby(int slot)
     {
         _pendingKind = PendingKind.Manual;
@@ -199,7 +199,9 @@ public sealed class SaveLoadManager : MonoBehaviour
             TryPerformPendingLoad();
     }
 
-    // ·Îºñ µî¿¡¼­ È£Ãâ(¿ÀÅä ½½·Ô)
+        SteamIntegrationManager.TrySyncCloudSaveToLocal(path);
+
+    // ë¡œë¹„ ë“±ì—ì„œ í˜¸ì¶œ(ì˜¤í†  ìŠ¬ë¡¯)
     public void RequestLoadAutoFromLobby(int slot)
     {
         _pendingKind = PendingKind.Auto;
@@ -210,7 +212,7 @@ public sealed class SaveLoadManager : MonoBehaviour
         else
             TryPerformPendingLoad();
     }
-    /// <summary>½½·Ô ¸ŞÅ¸ Á¤º¸ ´Ü¼ø Á¶È¸(UI ¸ñ·Ï¿ë)</summary>
+    /// <summary>ìŠ¬ë¡¯ ë©”íƒ€ ì •ë³´ ë‹¨ìˆœ ì¡°íšŒ(UI ëª©ë¡ìš©)</summary>
     public bool TryGetSlotInfo(bool manual, int slot, out SaveData meta)
     {
         string path = PathOf(manual ? manualPrefix : autosavePrefix, slot);
@@ -224,7 +226,7 @@ public sealed class SaveLoadManager : MonoBehaviour
         catch { meta = default; return false; }
     }
 
-    // === ³»ºÎ ±¸Çö ===
+    // === ë‚´ë¶€ êµ¬í˜„ ===
     void TryPerformPendingLoad()
     {
         if (_pendingKind == PendingKind.None) return;
@@ -258,22 +260,22 @@ public sealed class SaveLoadManager : MonoBehaviour
 
         tmpFlags.Clear(); tmpGlossary.Clear(); tmpCharacters.Clear();
 
-        // 1) ÇöÀç ³ëµå
+        // 1) í˜„ì¬ ë…¸ë“œ
         int nodeId = SafeGetNodeId();
         if (nodeId < 0) nodeId = -1;
 
-        // µ¿ÀÏ ³ëµå ¹İº¹ ÀúÀå ¹æÁö (¿ÀÅä¼¼ÀÌºê ÆøÁÖ ¹æÁö)
+        // ë™ì¼ ë…¸ë“œ ë°˜ë³µ ì €ì¥ ë°©ì§€ (ì˜¤í† ì„¸ì´ë¸Œ í­ì£¼ ë°©ì§€)
         if (isAuto && nodeId >= 0 && nodeId == _lastSavedNodeId)
         {
-            // ÁøÇàÀÌ ¾øÀ¸¸é ÀúÀå ÆĞ½º
+            // ì§„í–‰ì´ ì—†ìœ¼ë©´ ì €ì¥ íŒ¨ìŠ¤
             return false;
         }
 
-        // 2) ÇÃ·¡±× ¼öÁı
+        // 2) í”Œë˜ê·¸ ìˆ˜ì§‘
         for (int i = 0; i < maxFlagsToScan; i++)
             if (runner.HasFlag(i)) tmpFlags.Add(i);
 
-        // 3) ±Û·Î¼­¸®/Ä³¸¯ÅÍ
+        // 3) ê¸€ë¡œì„œë¦¬/ìºë¦­í„°
         var gdb = ui.glossary;
         if (gdb != null && gdb.present != null)
         {
@@ -287,7 +289,7 @@ public sealed class SaveLoadManager : MonoBehaviour
                 if (cdb.present[i] && cdb.owned.Has(i)) tmpCharacters.Add(i);
         }
 
-        // 4) ¸ŞÅ¸
+        // 4) ë©”íƒ€
         var data = new SaveData
         {
             version = 2,
@@ -302,18 +304,21 @@ public sealed class SaveLoadManager : MonoBehaviour
             characters = tmpCharacters.ToArray()
         };
 
-        // 4-1) ¹é·Î±× ½º³À¼¦ ÀúÀå
+        // 4-1) ë°±ë¡œê·¸ ìŠ¤ëƒ…ìƒ· ì €ì¥
         var lm = ChatLogManager.Instance;
         if (lm != null && logTailCount > 0)
         {
             int want = Mathf.Min(logTailCount, lm.Count);
             if (want > 0)
             {
-                // ÀÓ½Ã ¹öÆÛ Å©±â È®º¸
+                // ì„ì‹œ ë²„í¼ í¬ê¸° í™•ë³´
                 if (_tmpLogBuf == null || _tmpLogBuf.Length < want)
                     _tmpLogBuf = new ChatLogManager.LogEntry[want];
 
-                int got = lm.CopyLatest(_tmpLogBuf, want); // ¿À·¡µÈ¡æÃÖ½Å ¼ø¼­·Î Ã¤¿öÁü
+            SteamIntegrationManager.TryUploadSaveToCloud(path, json);
+
+        SteamIntegrationManager.TrySyncCloudSaveToLocal(path);
+                int got = lm.CopyLatest(_tmpLogBuf, want); // ì˜¤ë˜ëœâ†’ìµœì‹  ìˆœì„œë¡œ ì±„ì›Œì§
                 if (got > 0)
                 {
                     data.logTail = new LogLine[got];
@@ -330,7 +335,7 @@ public sealed class SaveLoadManager : MonoBehaviour
             }
         }
 
-        // 5) ÆÄÀÏ ±â·Ï
+        // 5) íŒŒì¼ ê¸°ë¡
         try
         {
             string path = PathOf(isAuto ? autosavePrefix : manualPrefix, slot);
@@ -338,7 +343,7 @@ public sealed class SaveLoadManager : MonoBehaviour
             File.WriteAllText(path, json);
 
             _lastSavedNodeId = nodeId;
-            // ¿ÀÅä¼¼ÀÌºê´Â È¸Àü(·ÎÅ×ÀÌ¼Ç) °ü¸®
+            // ì˜¤í† ì„¸ì´ë¸ŒëŠ” íšŒì „(ë¡œí…Œì´ì…˜) ê´€ë¦¬
             if (isAuto) RotateAutosaves();
 
             return true;
@@ -352,8 +357,8 @@ public sealed class SaveLoadManager : MonoBehaviour
 
     void TryAutosave(string tag, int chapterOverride = -1)
     {
-        // ½½·Ô È¸Àü: auto_0 ~ auto_{maxAutosaves-1}
-        // °¡Àå ¿À·¡µÈ ÆÄÀÏÀ» µ¤¾î¾²´Â ¹æ½Ä
+        // ìŠ¬ë¡¯ íšŒì „: auto_0 ~ auto_{maxAutosaves-1}
+        // ê°€ì¥ ì˜¤ë˜ëœ íŒŒì¼ì„ ë®ì–´ì“°ëŠ” ë°©ì‹
         int slot = FindOldestAutosaveSlot();
         SaveInternal(slot, isAuto: true, tag: tag, chapterOverride: chapterOverride);
     }
@@ -372,8 +377,8 @@ public sealed class SaveLoadManager : MonoBehaviour
 
     void RotateAutosaves()
     {
-        // ¿©±â¼± º°µµ »èÁ¦/ÀÌµ¿ ¾øÀÌ FindOldestAutosaveSlot·Î È¸Àü °ü¸®
-        // (ÇÊ¿äÇÏ¸é ¿ë·® °ü¸®/ÃÖ´ë º¸°ü ÀÏ¼ö Ãß°¡)
+        // ì—¬ê¸°ì„  ë³„ë„ ì‚­ì œ/ì´ë™ ì—†ì´ FindOldestAutosaveSlotë¡œ íšŒì „ ê´€ë¦¬
+        // (í•„ìš”í•˜ë©´ ìš©ëŸ‰ ê´€ë¦¬/ìµœëŒ€ ë³´ê´€ ì¼ìˆ˜ ì¶”ê°€)
     }
 
     bool LoadFromPath(string path, bool jumpToNode, bool clearBeforeApply)
@@ -386,7 +391,7 @@ public sealed class SaveLoadManager : MonoBehaviour
             var json = File.ReadAllText(path);
             var data = JsonUtility.FromJson<SaveData>(json);
 
-            // 1) ÃÊ±âÈ­
+            // 1) ì´ˆê¸°í™”
             if (clearBeforeApply)
             {
                 runner.ClearAllFlags();
@@ -394,7 +399,7 @@ public sealed class SaveLoadManager : MonoBehaviour
                 if (ui.characters != null) ui.characters.owned.Clear();
             }
 
-            // 2) Àû¿ë
+            // 2) ì ìš©
             if (data.flags != null)
                 for (int i = 0; i < data.flags.Length; i++) runner.SetFlag(data.flags[i]);
 
@@ -405,14 +410,14 @@ public sealed class SaveLoadManager : MonoBehaviour
                 for (int i = 0; i < data.characters.Length; i++) ui.characters.owned.Set(data.characters[i]);
 
             _playtimeSec = data.playtimeSec > 0 ? data.playtimeSec : _playtimeSec;
-            // 2-1) ¹é·Î±× º¹¿ø (Á¡ÇÁ Àü¿¡ Ã³¸®)
+            // 2-1) ë°±ë¡œê·¸ ë³µì› (ì í”„ ì „ì— ì²˜ë¦¬)
             if (clearBeforeApply)
             {
                 ChatLogManager.Instance?.Clear();
             }
             if (data.logTail != null && data.logTail.Length > 0)
             {
-                // Á¡ÇÁÇÒ ³ëµå°¡ ½º³À¼¦ÀÇ '¸¶Áö¸· ÁÙ'°ú °°´Ù¸é ¸¶Áö¸· ÁÙÀº Á¦¿Ü(Á¡ÇÁ Á÷ÈÄ Áßº¹ ¹æÁö)
+                // ì í”„í•  ë…¸ë“œê°€ ìŠ¤ëƒ…ìƒ·ì˜ 'ë§ˆì§€ë§‰ ì¤„'ê³¼ ê°™ë‹¤ë©´ ë§ˆì§€ë§‰ ì¤„ì€ ì œì™¸(ì í”„ ì§í›„ ì¤‘ë³µ ë°©ì§€)
                 int tailLen = data.logTail.Length;
                 int end = tailLen;
                 if (jumpToNode && data.nodeId >= 0 && tailLen > 0)
@@ -431,7 +436,7 @@ public sealed class SaveLoadManager : MonoBehaviour
                     }
                 }
             }
-            // 3) Á¡ÇÁ
+            // 3) ì í”„
             if (jumpToNode && data.nodeId >= 0)
             {
                 runner.JumpToNode(data.nodeId);
@@ -448,15 +453,15 @@ public sealed class SaveLoadManager : MonoBehaviour
         }
     }
 
-    // === ¾ÈÀü ¾î´ğÅÍ ===
+    // === ì•ˆì „ ì–´ëŒ‘í„° ===
     int SafeGetNodeId() => runner != null ? runner.GetCurrentNodeId() : -1;
 
-    // Ã©ÅÍ ID Á¦°øÀÚ°¡ ¾øÀ¸¸é -1 (ÇÊ¿ä ½Ã StoryGameManager µî¿¡¼­ ÁÖÀÔ/¹ÙÀÎµù)
+    // ì±•í„° ID ì œê³µìê°€ ì—†ìœ¼ë©´ -1 (í•„ìš” ì‹œ StoryGameManager ë“±ì—ì„œ ì£¼ì…/ë°”ì¸ë”©)
     int SafeGetChapterId()
     {
-        // 1) ·¯³Ê°¡ Ã©ÅÍ Á¦°ø ÀÎÅÍÆäÀÌ½º¸¦ ±¸ÇöÇß´Ù¸é »ç¿ë
-        // 2) ¾Æ´Ï¸é StoryGameManager µî¿¡¼­ ÁÖÀÔµÈ ÇöÀç Ã©ÅÍ °ªÀ» ÂüÁ¶ÇÏµµ·Ï È®Àå °¡´É
-        // ¿©±â¼­´Â ±âº» -1
+        // 1) ëŸ¬ë„ˆê°€ ì±•í„° ì œê³µ ì¸í„°í˜ì´ìŠ¤ë¥¼ êµ¬í˜„í–ˆë‹¤ë©´ ì‚¬ìš©
+        // 2) ì•„ë‹ˆë©´ StoryGameManager ë“±ì—ì„œ ì£¼ì…ëœ í˜„ì¬ ì±•í„° ê°’ì„ ì°¸ì¡°í•˜ë„ë¡ í™•ì¥ ê°€ëŠ¥
+        // ì—¬ê¸°ì„œëŠ” ê¸°ë³¸ -1
         return -1;
     }
 }

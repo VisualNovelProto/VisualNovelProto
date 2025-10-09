@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +8,8 @@ public static class GlobalFlags
     [System.Serializable] class Box { public int[] ids; }
 
     static HashSet<int> _set;
+
+    public static event Action<int> FlagAdded;
 
     static void Ensure()
     {
@@ -35,7 +38,13 @@ public static class GlobalFlags
     public static bool Add(int id)
     {
         if (id <= 0) return false;
-        Ensure(); if (_set.Add(id)) { Save(); return true; }
+        Ensure();
+        if (_set.Add(id))
+        {
+            Save();
+            NotifyFlagAdded(id);
+            return true;
+        }
         return false;
     }
 
@@ -46,8 +55,27 @@ public static class GlobalFlags
         for (int i = 0; i < count; i++)
         {
             int v = pool[offset + i];
-            if (v > 0 && _set.Add(v)) changed = true;
+            if (v > 0 && _set.Add(v))
+            {
+                changed = true;
+                NotifyFlagAdded(v);
+            }
         }
         if (changed) Save();
+    }
+
+    static void NotifyFlagAdded(int id)
+    {
+        if (id <= 0 || FlagAdded == null)
+            return;
+
+        try
+        {
+            FlagAdded.Invoke(id);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+        }
     }
 }
