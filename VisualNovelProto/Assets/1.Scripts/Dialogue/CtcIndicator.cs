@@ -44,6 +44,11 @@ public sealed class CtcIndicator : MonoBehaviour
     Coroutine delayRoutine;
     Coroutine autoRoutine;
 
+    RectTransform rectTransform;
+    Vector2 defaultRootCornerPosition;
+    Vector2 defaultCornerRootPosition;
+    Vector3 defaultInlineRootPosition;
+
     bool prepared;
     bool typing;
     bool awaitingInput;
@@ -72,6 +77,15 @@ public sealed class CtcIndicator : MonoBehaviour
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
         }
+
+        rectTransform = transform as RectTransform;
+        if (rectTransform != null)
+            defaultRootCornerPosition = rectTransform.anchoredPosition;
+
+        if (cornerRoot != null)
+            defaultCornerRootPosition = cornerRoot.anchoredPosition;
+        if (inlineRoot != null)
+            defaultInlineRootPosition = inlineRoot.anchoredPosition3D;
 
         CacheGraphicColors();
 
@@ -266,10 +280,18 @@ public sealed class CtcIndicator : MonoBehaviour
         if (inlineRoot != null)
             inlineRoot.gameObject.SetActive(mode == CtcIndicatorMode.Inline);
 
-        if (mode == CtcIndicatorMode.Corner && cornerRoot != null && config != null)
-            cornerRoot.anchoredPosition = config.cornerOffset;
-        if (mode == CtcIndicatorMode.Inline && inlineRoot != null)
-            inlineRoot.anchoredPosition3D = Vector3.zero;
+        if (rectTransform != null)
+        {
+            if (mode == CtcIndicatorMode.Corner)
+                rectTransform.anchoredPosition = config != null ? config.cornerOffset : defaultRootCornerPosition;
+            else
+                rectTransform.anchoredPosition = Vector2.zero;
+        }
+
+        if (cornerRoot != null)
+            cornerRoot.anchoredPosition = defaultCornerRootPosition;
+        if (inlineRoot != null)
+            inlineRoot.anchoredPosition3D = defaultInlineRootPosition;
 
         if (autoReplacementRoot != null && autoReplacementRoot.activeSelf)
         {
@@ -621,17 +643,7 @@ public sealed class CtcIndicator : MonoBehaviour
             return;
         }
 
-        int index = -1;
-        for (int i = info.characterCount - 1; i >= 0; i--)
-        {
-            var ch = info.characterInfo[i];
-            if (!ch.isVisible)
-                continue;
-            index = i;
-            break;
-        }
-
-        if (index < 0)
+        if (!TryGetLastRenderableCharacter(info, out int index))
         {
             inlineRoot.gameObject.SetActive(false);
             return;
@@ -658,7 +670,43 @@ public sealed class CtcIndicator : MonoBehaviour
             cam,
             out anchored);
         Vector2 offset = config != null ? config.inlineOffset : Vector2.zero;
-        inlineRoot.anchoredPosition = anchored + offset;
+        Vector3 basePosition = defaultInlineRootPosition;
+        basePosition.x += anchored.x + offset.x;
+        basePosition.y += anchored.y + offset.y;
+        inlineRoot.anchoredPosition3D = basePosition;
+    }
+
+    bool TryGetLastRenderableCharacter(TMP_TextInfo info, out int index)
+    {
+        index = -1;
+        if (info == null)
+            return false;
+
+        for (int i = info.characterCount - 1; i >= 0; i--)
+        {
+            var ch = info.characterInfo[i];
+
+            if (!ch.isVisible)
+                continue;
+
+            if (ch.elementType == TMP_TextElementType.Sprite)
+            {
+                index = i;
+                return true;
+            }
+
+            if (ch.elementType != TMP_TextElementType.Character)
+                continue;
+
+            char c = ch.character;
+            if (c == 0 || char.IsControl(c) || char.IsWhiteSpace(c))
+                continue;
+
+            index = i;
+            return true;
+        }
+
+        return false;
     }
 
     void UpdateInputIconImmediate()
