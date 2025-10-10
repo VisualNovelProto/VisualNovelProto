@@ -63,6 +63,7 @@ public sealed class DialogueUI : MonoBehaviour
 
     [Header("Click To Continue")]
     public Button continueWholeScreenButton;
+    public CtcIndicator ctcIndicator;
 
     [Header("Sprite Bindings (Optional)")]
     public SpriteBinding[] portraitBindings;
@@ -81,6 +82,7 @@ public sealed class DialogueUI : MonoBehaviour
     DialogueRunner runner;
     int currentChoiceCount;
     bool awaitingChoice;
+    bool currentLineHasVisibleCharacters;
 
     static readonly char[] TrimWeird = { '\uFEFF', '\u200B', '\u200E', '\u200F', '\u00A0', ' ', '\t', '\r', '\n' };
     static string Clean(string s) => string.IsNullOrEmpty(s) ? s : s.Trim(TrimWeird);
@@ -124,6 +126,13 @@ public sealed class DialogueUI : MonoBehaviour
             continueWholeScreenButton.onClick.AddListener(OnClickContinue);
         }
 
+        if (ctcIndicator != null)
+        {
+            ctcIndicator.SetInlineSource(bodyText);
+            ctcIndicator.OnLineStarted();
+            ctcIndicator.OnLineContentUpdated(false);
+        }
+
         // 링크 오버레이 핸들러 연결
         if (speakerOverlay != null)
         {
@@ -142,6 +151,13 @@ public sealed class DialogueUI : MonoBehaviour
     public void ShowNode(DialogueNode node, DialogueDatabase db)
     {
         awaitingChoice = false;
+        currentLineHasVisibleCharacters = false;
+
+        if (ctcIndicator != null)
+        {
+            ctcIndicator.SetInlineSource(bodyText);
+            ctcIndicator.OnLineStarted();
+        }
 
         // 1) 스피커: 나레이션/속마음이면 이름칸 비움
         if (speakerText != null)
@@ -547,22 +563,54 @@ public sealed class DialogueUI : MonoBehaviour
     void SetBodyTextForTyping(string fullRich)
     {
         currentFullText = fullRich ?? string.Empty;
-        if (!bodyText) return;
+        if (!bodyText)
+        {
+            currentLineHasVisibleCharacters = false;
+            if (ctcIndicator != null) ctcIndicator.OnLineContentUpdated(false);
+            return;
+        }
 
         bodyText.text = currentFullText;   // 링크/색 포함된 텍스트
 
         //파괴/비활성 가드 + try/catch
-        if (!bodyText || !bodyText.gameObject.activeInHierarchy) return;
-        try { bodyText.ForceMeshUpdate(); } catch { return; }
+        if (!bodyText || !bodyText.gameObject.activeInHierarchy)
+        {
+            currentLineHasVisibleCharacters = false;
+            if (ctcIndicator != null) ctcIndicator.OnLineContentUpdated(false);
+            return;
+        }
+        try { bodyText.ForceMeshUpdate(); }
+        catch
+        {
+            currentLineHasVisibleCharacters = false;
+            if (ctcIndicator != null) ctcIndicator.OnLineContentUpdated(false);
+            return;
+        }
 
         currentVisible = 0;
         bodyText.maxVisibleCharacters = 0; // 0부터 시작
+
+        currentLineHasVisibleCharacters = false;
+        var info = bodyText.textInfo;
+        for (int i = 0; i < info.characterCount; i++)
+        {
+            if (!info.characterInfo[i].isVisible)
+                continue;
+            currentLineHasVisibleCharacters = true;
+            break;
+        }
+
+        if (ctcIndicator != null)
+            ctcIndicator.OnLineContentUpdated(currentLineHasVisibleCharacters);
     }
 
     void BeginTyping()
     {
         if (typingCo != null) StopCoroutine(typingCo);
         isTyping = false;
+
+        if (ctcIndicator != null)
+            ctcIndicator.OnTypingStarted();
 
         float cps = TypingConfig.GetCharsPerSecond(currentSpeed);
         if (float.IsInfinity(cps)) // Off → 전부 표시
@@ -585,6 +633,37 @@ public sealed class DialogueUI : MonoBehaviour
         if (bodyOverlay != null) bodyOverlay.SetVisibleCharacterCount(int.MaxValue);
 
         AutoUnlockFromTMP(bodyText);
+
+        NotifyTypingEnded(true);
+    }
+
+    void TryNotifyAwaitingInput()
+    {
+        if (ctcIndicator == null)
+            return;
+        if (!currentLineHasVisibleCharacters)
+            return;
+        if (awaitingChoice)
+            return;
+        if (PauseMenu.IsPaused || TransitionManager.IsPlaying || UiModalGate.IsOpen)
+            return;
+
+        ctcIndicator.OnAwaitingInput();
+    }
+
+    void NotifyTypingEnded(bool attemptAwait)
+    {
+        if (ctcIndicator != null)
+            ctcIndicator.OnTypingCompleted();
+        if (attemptAwait)
+            TryNotifyAwaitingInput();
+    }
+
+    void AbortTyping()
+    {
+        isTyping = false;
+        typingCo = null;
+        NotifyTypingEnded(false);
     }
 
     // 입력 처리에서 호출: 진행 키/클릭
@@ -601,12 +680,13 @@ public sealed class DialogueUI : MonoBehaviour
     IEnumerator CoType(TMP_Text label, float charsPerSec)
     {
         // 시작 시점 가드
-        if (!this || !label) yield break;
+        if (!this || !label) { AbortTyping(); yield break; }
         isTyping = true;
 
         // 첫 ForceMeshUpdate도 안전하게
-        if (!label || !label.gameObject.activeInHierarchy) { isTyping = false; yield break; }
-        try { label.ForceMeshUpdate(); } catch { isTyping = false; yield break; }
+        if (!label || !label.gameObject.activeInHierarchy) { AbortTyping(); yield break; }
+        try { label.ForceMeshUpdate(); }
+        catch { AbortTyping(); yield break; }
 
         int totalChars = label.textInfo.characterCount;
 
@@ -617,8 +697,8 @@ public sealed class DialogueUI : MonoBehaviour
         while (true)
         {
             // ★ 루프마다 생존 확인
-            if (!this || !label) { isTyping = false; typingCo = null; yield break; }
-            if (!label.gameObject.activeInHierarchy) { isTyping = false; typingCo = null; yield break; }
+            if (!this || !label) { AbortTyping(); yield break; }
+            if (!label.gameObject.activeInHierarchy) { AbortTyping(); yield break; }
 
             // 안전한 ForceMeshUpdate
             try
@@ -628,7 +708,7 @@ public sealed class DialogueUI : MonoBehaviour
             }
             catch
             {
-                isTyping = false; typingCo = null; yield break;
+                AbortTyping(); yield break;
             }
 
             if (targetVisible >= totalChars) break;
@@ -662,6 +742,8 @@ public sealed class DialogueUI : MonoBehaviour
         typingCo = null;
         RefreshOverlaysAfterTyping();
         AutoUnlockFromTMP(bodyText);
+
+        NotifyTypingEnded(true);
     }
 
 
@@ -687,6 +769,9 @@ public sealed class DialogueUI : MonoBehaviour
     {
         HideAllChoices();
         awaitingChoice = true;
+
+        if (ctcIndicator != null)
+            ctcIndicator.OnChoicesShown();
 
         int showCount = choices.Length;
         if (showCount > choiceButtons.Length)
@@ -718,6 +803,9 @@ public sealed class DialogueUI : MonoBehaviour
         for (int i = 0; i < choiceButtons.Length; i++)
             if (choiceButtons[i] != null)
                 choiceButtons[i].gameObject.SetActive(false);
+
+        if (ctcIndicator != null)
+            ctcIndicator.OnChoicesHidden();
     }
 
     public void OnClickContinue()
@@ -726,7 +814,14 @@ public sealed class DialogueUI : MonoBehaviour
         if (TransitionManager.IsPlaying) return;
         if (UiModalGate.IsOpen) return;
         if (awaitingChoice) return;
+        if (ctcIndicator != null) ctcIndicator.OnAdvanceConsumed();
         if (runner != null) runner.Step();
+    }
+
+    public void OnAutoModeChanged(bool on)
+    {
+        if (ctcIndicator != null)
+            ctcIndicator.OnAutoModeChanged(on);
     }
 
     void OnClickChoice(int index)
@@ -736,6 +831,9 @@ public sealed class DialogueUI : MonoBehaviour
         if (UiModalGate.IsOpen) return;
         if (!awaitingChoice) return;
         if (index < 0 || index >= currentChoiceCount) return;
+
+        if (ctcIndicator != null)
+            ctcIndicator.OnAdvanceConsumed();
 
         if (runner != null)
             runner.Choose(index);

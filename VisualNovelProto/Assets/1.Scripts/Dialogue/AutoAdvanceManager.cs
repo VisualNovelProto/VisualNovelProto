@@ -2,16 +2,18 @@ using UnityEngine;
 
 public sealed class AutoAdvanceManager : MonoBehaviour
 {
-    [Header("Refs (ºñ¿öµÎ¸é ÀÚµ¿ Å½»ö)")]
+    [Header("Refs (ë¹„ì›Œë‘ë©´ ìë™ íƒìƒ‰)")]
     public DialogueRunner runner;
     public DialogueUI ui;
 
     [Header("Timing")]
     public bool useUnscaledTime = false;
-    public float baseDelay = 0.4f;     // ±âº» ´ë±â
-    public float perChar = 0.03f;      // ±ÛÀÚ´ç °¡Áß
-    public float minDelay = 0.3f;      // ÇÏÇÑ
-    public float maxDelay = 4.0f;      // »óÇÑ
+        if (ui != null)
+            ui.OnAutoModeChanged(autoEnabled);
+    public float baseDelay = 0.4f;     // ê¸°ë³¸ ëŒ€ê¸°
+    public float perChar = 0.03f;      // ê¸€ìë‹¹ ê°€ì¤‘
+    public float minDelay = 0.3f;      // í•˜í•œ
+    public float maxDelay = 4.0f;      // ìƒí•œ
 
     [Header("State")]
     public bool autoEnabled;
@@ -38,16 +40,16 @@ public sealed class AutoAdvanceManager : MonoBehaviour
     {
         if (!autoEnabled || runner == null || ui == null) return;
 
-        // ±Û·Î¹ú °ÔÀÌÆ®(ÁøÇà ±İÁö »óÈ²) Ã¼Å©
+        // ê¸€ë¡œë²Œ ê²Œì´íŠ¸(ì§„í–‰ ê¸ˆì§€ ìƒí™©) ì²´í¬
         if (PauseMenu.IsPaused || TransitionManager.IsPlaying || UiModalGate.IsOpen) return; // 
 
         bool typing = ui.IsTypingPublic;
         bool awaitingChoice = ui.IsAwaitingChoicePublic;
 
-        // ¼±ÅÃÁö ¶ß¸é ´ë±â(»ç¿ëÀÚ°¡ Á÷Á¢ ¼±ÅÃ)
+        // ì„ íƒì§€ ëœ¨ë©´ ëŒ€ê¸°(ì‚¬ìš©ìê°€ ì§ì ‘ ì„ íƒ)
         if (awaitingChoice) { timer = 0f; return; }
 
-        // Å¸ÀÌÇÎ ¡æ ¿Ï·á·Î ³Ñ¾î°£ "º¯°îÁ¡"¿¡¼­ Å¸ÀÌ¸Ó ¼¼ÆÃ
+        // íƒ€ì´í•‘ â†’ ì™„ë£Œë¡œ ë„˜ì–´ê°„ "ë³€ê³¡ì "ì—ì„œ íƒ€ì´ë¨¸ ì„¸íŒ…
         if (prevTyping && !typing)
         {
             int len = ui.CurrentBodyLengthPublic;
@@ -56,10 +58,10 @@ public sealed class AutoAdvanceManager : MonoBehaviour
         }
         prevTyping = typing;
 
-        // ¾ÆÁ÷ Å¸ÀÌÇÎ ÁßÀÌ¸é Å¸ÀÌ¸Ó ¸®¼Â
+        // ì•„ì§ íƒ€ì´í•‘ ì¤‘ì´ë©´ íƒ€ì´ë¨¸ ë¦¬ì…‹
         if (typing) { timer = 0f; return; }
 
-        // Å¸ÀÌ¸Ó °¨¼Ò & Step
+        // íƒ€ì´ë¨¸ ê°ì†Œ & Step
         float dt = useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
         if (timer > 0f)
         {
@@ -67,8 +69,8 @@ public sealed class AutoAdvanceManager : MonoBehaviour
             if (timer > 0f) return;
         }
 
-        // ´ÙÀ½À¸·Î
-        runner.Step(); // ±âÁ¸ ÁøÇà ÇÔ¼ö ±×´ë·Î »ç¿ë. :contentReference[oaicite:7]{index=7}
+        // ë‹¤ìŒìœ¼ë¡œ
+        runner.Step(); // ê¸°ì¡´ ì§„í–‰ í•¨ìˆ˜ ê·¸ëŒ€ë¡œ ì‚¬ìš©. :contentReference[oaicite:7]{index=7}
         timer = 0f;
     }
 }

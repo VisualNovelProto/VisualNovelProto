@@ -3,20 +3,22 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// È­¸é(¹è°æ) Æ®·£Áö¼Ç + Ä³¸¯ÅÍ(ÃÊ»ó) Æ®·£Áö¼ÇÀ» ÇÑ °÷¿¡¼­ °ü¸®.
-/// - µ¿Àû »ı¼º/ÄÚ·çÆ¾ ¾øÀ½. °íÁ¤ Å©±â Ç®¿¡¼­ °»½Å(Update)¸¸ µ¹¸².
-/// - CSV node.transition ¿¹:
+/// í™”ë©´(ë°°ê²½) íŠ¸ëœì§€ì…˜ + ìºë¦­í„°(ì´ˆìƒ) íŠ¸ëœì§€ì…˜ì„ í•œ ê³³ì—ì„œ ê´€ë¦¬.
+/// - ë™ì  ìƒì„±/ì½”ë£¨í‹´ ì—†ìŒ. ê³ ì • í¬ê¸° í’€ì—ì„œ ê°±ì‹ (Update)ë§Œ ëŒë¦¼.
+/// - CSV node.transition ì˜ˆ:
 ///   "fade_out(t=0.4);fade_in(t=0.3,delay=0.4)"
 ///   "blackout" / "shake(t=0.3,amp=18)"
 ///   "mask(name=left_to_right; time=0.6; invert=0; soft=0.02; color=#000000)"
-/// - Ä³¸¯ÅÍ ¿¬ÃâÀº DialogueUI¿¡¼­ TransitionManager.PlayActorIn(...) È£Ãâ.
+    public static event Action<bool> StateChanged;
+        int prevCount = _activeCount;
+/// - ìºë¦­í„° ì—°ì¶œì€ DialogueUIì—ì„œ TransitionManager.PlayActorIn(...) í˜¸ì¶œ.
 /// </summary>
 public sealed class TransitionManager : MonoBehaviour
 {
     // ===== Mask Wipe =====
     [Header("Mask Wipe")]
-    public RawImage maskOverlay;                 // Canvas ÀüÃ¼ RawImage(·¹ÀÌÄ³½ºÆ® OFF)
-    public Material maskMaterialTemplate;        // "UI/GrayscaleMaskWipe" ¼ÎÀÌ´õ ¸ÓÆ¼¸®¾ó
+    public RawImage maskOverlay;                 // Canvas ì „ì²´ RawImage(ë ˆì´ìºìŠ¤íŠ¸ OFF)
+    public Material maskMaterialTemplate;        // "UI/GrayscaleMaskWipe" ì…°ì´ë” ë¨¸í‹°ë¦¬ì–¼
     public string maskResourcesFolder = "TransitionMasks";
 
     Material _maskMat;
@@ -29,15 +31,15 @@ public sealed class TransitionManager : MonoBehaviour
         public RawImage overlay;
         public Material mat;
     }
-    MaskTask mask; // µ¿½Ã¿¡ ÇÏ³ª¸¸ Àç»ıÇÑ´Ù°í °¡Á¤
+    MaskTask mask; // ë™ì‹œì— í•˜ë‚˜ë§Œ ì¬ìƒí•œë‹¤ê³  ê°€ì •
 
     public static bool IsPlaying => _activeCount > 0;
     static TransitionManager _i;
     static int _activeCount;
 
     [Header("Screen Targets")]
-    public Image fadeOverlay;          // ÀüÃ¼ È­¸é µ¤´Â °ËÀº ÀÌ¹ÌÁö(¾ËÆÄ ¾Ö´Ï¸ŞÀÌ¼Ç)
-    public RectTransform shakeTarget;  // Èçµé ´ë»ó(º¸Åë ÃÖ»óÀ§ Canvas/Panel)
+    public Image fadeOverlay;          // ì „ì²´ í™”ë©´ ë®ëŠ” ê²€ì€ ì´ë¯¸ì§€(ì•ŒíŒŒ ì• ë‹ˆë©”ì´ì…˜)
+    public RectTransform shakeTarget;  // í”ë“¤ ëŒ€ìƒ(ë³´í†µ ìµœìƒìœ„ Canvas/Panel)
 
     [Header("Settings")]
     public bool useUnscaledTime = true;
@@ -45,7 +47,7 @@ public sealed class TransitionManager : MonoBehaviour
     public float defaultShakeAmp = 16f;
     public float defaultShakeTime = 0.25f;
 
-    // ===== Internal: °íÁ¤ Ç® =====
+    // ===== Internal: ê³ ì • í’€ =====
     const int MaxFade = 16;
     const int MaxShake = 4;
     const int MaxActor = 12;
@@ -65,7 +67,7 @@ public sealed class TransitionManager : MonoBehaviour
         if (fadeOverlay != null)
         {
             var c = fadeOverlay.color; c.a = 0f; fadeOverlay.color = c;
-            fadeOverlay.gameObject.SetActive(true); // Ç×»ó ÄÑµÎµÇ ¾ËÆÄ 0
+            fadeOverlay.gameObject.SetActive(true); // í•­ìƒ ì¼œë‘ë˜ ì•ŒíŒŒ 0
         }
         if (maskOverlay != null) maskOverlay.gameObject.SetActive(false);
     }
@@ -97,7 +99,7 @@ public sealed class TransitionManager : MonoBehaviour
                 var s = shakes[i];
                 s.t += dt;
                 float a = Mathf.Clamp01((s.t - s.delay) / Mathf.Max(0.0001f, s.dur));
-                float k = 1f - a; // °¨¼è
+                float k = 1f - a; // ê°ì‡ 
                 if (s.target)
                 {
                     Vector2 ofs = new Vector2(
@@ -174,13 +176,15 @@ public sealed class TransitionManager : MonoBehaviour
         }
 
         _activeCount = alive;
+        if ((prevCount > 0) != (_activeCount > 0))
+            StateChanged?.Invoke(_activeCount > 0);
     }
 
     // ===== Public API: Background =====
 
     /// <summary>
-    /// CSV node.transition ¹®ÀÚ¿­À» ÆÄ½ÌÇØ¼­ ¿©·¯ Æ®·£Áö¼ÇÀ» µî·Ï.
-    /// ¿¹) "fade_out(t=0.4);fade_in(t=0.3,delay=0.4);shake(t=0.25,amp=14);mask(name=left_to_right)"
+    /// CSV node.transition ë¬¸ìì—´ì„ íŒŒì‹±í•´ì„œ ì—¬ëŸ¬ íŠ¸ëœì§€ì…˜ì„ ë“±ë¡.
+    /// ì˜ˆ) "fade_out(t=0.4);fade_in(t=0.3,delay=0.4);shake(t=0.25,amp=14);mask(name=left_to_right)"
     /// </summary>
     public static void Play(string spec)
     {
@@ -234,7 +238,7 @@ public sealed class TransitionManager : MonoBehaviour
         else if (name.Equals("clearout", StringComparison.OrdinalIgnoreCase)) EnqueueFade(1f, 0f, 0f, 0f);
         else if (name.Equals("shake", StringComparison.OrdinalIgnoreCase)) EnqueueShake(t, amp, delay);
         else if (name.Equals("mask", StringComparison.OrdinalIgnoreCase)) EnqueueMask(mName, t, delay, invert, soft, mColor);
-        // ÇÊ¿ä ½Ã Ãß°¡: flash, blur µî
+        // í•„ìš” ì‹œ ì¶”ê°€: flash, blur ë“±
     }
 
     static void EnqueueFade(float from, float to, float dur, float delay)
@@ -285,7 +289,7 @@ public sealed class TransitionManager : MonoBehaviour
     {
         if (_i == null || _i.maskOverlay == null || _i.maskMaterialTemplate == null || string.IsNullOrEmpty(name)) return;
 
-        // ¸®¼Ò½º ·Îµå
+        // ë¦¬ì†ŒìŠ¤ ë¡œë“œ
         string path = string.IsNullOrEmpty(_i.maskResourcesFolder) ? name : (_i.maskResourcesFolder + "/" + name);
         _i._maskTex = Resources.Load<Texture2D>(path);
         if (_i._maskTex == null) { Debug.LogWarning($"TransitionManager: mask texture not found: Resources/{path}"); return; }
@@ -312,11 +316,11 @@ public sealed class TransitionManager : MonoBehaviour
         };
     }
 
-    // ===== Public API: Actor(ÃÊ»ó) =====
+    // ===== Public API: Actor(ì´ˆìƒ) =====
 
     /// <summary>
-    /// Ä³¸¯ÅÍ ÀÔÀå ¿¬Ãâ. effect: "fade" | "pop" | "slide"
-    /// posHint: 'L','C','R' ¡æ slide ½ÃÀÛ ¹æÇâ ÃßÁ¤. ('X'¸é ¾Æ·¡¿¡¼­ ¿Ã¶ó¿À±â)
+    /// ìºë¦­í„° ì…ì¥ ì—°ì¶œ. effect: "fade" | "pop" | "slide"
+    /// posHint: 'L','C','R' â†’ slide ì‹œì‘ ë°©í–¥ ì¶”ì •. ('X'ë©´ ì•„ë˜ì—ì„œ ì˜¬ë¼ì˜¤ê¸°)
     /// </summary>
     public static void PlayActorIn(Image img, char posHint, string effect, float time, bool flipX)
     {
@@ -386,7 +390,7 @@ public sealed class TransitionManager : MonoBehaviour
             }
     }
 
-    /// <summary>¸ğµç ÁøÇà Áß Æ®·£Áö¼ÇÀ» Á¤ÁöÇÏ°í »óÅÂ¸¦ º¹¿ø.</summary>
+    /// <summary>ëª¨ë“  ì§„í–‰ ì¤‘ íŠ¸ëœì§€ì…˜ì„ ì •ì§€í•˜ê³  ìƒíƒœë¥¼ ë³µì›.</summary>
     public static void StopAllTransitions()
     {
         if (_i == null) return;

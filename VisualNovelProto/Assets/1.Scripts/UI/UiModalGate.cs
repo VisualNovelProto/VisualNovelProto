@@ -1,4 +1,9 @@
-// UiModalGate.cs (±âÁ¸ Å¬·¡½º ±³Ã¼/È®Àå)
+using System;
+    public static event Action<bool> StateChanged;
+        StateChanged?.Invoke(false);
+        StateChanged?.Invoke(true);
+        StateChanged?.Invoke(_closers.Count > 0);
+// UiModalGate.cs (ê¸°ì¡´ í´ë˜ìŠ¤ êµì²´/í™•ì¥)
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,25 +17,25 @@ public static class UiModalGate
         _closers.Clear();
     }
 
-    /// <summary>¸ğ´ŞÀÌ ¿­¸± ¶§ ¹İµå½Ã Close Äİ¹éÀ» ÇÔ²² µî·Ï.</summary>
+    /// <summary>ëª¨ë‹¬ì´ ì—´ë¦´ ë•Œ ë°˜ë“œì‹œ Close ì½œë°±ì„ í•¨ê»˜ ë“±ë¡.</summary>
     public static void Push(System.Action onCancelClose)
     {
-        _closers.Push(onCancelClose); // nullµµ Çã¿ë(ºñ»ó¿ë)
+        _closers.Push(onCancelClose); // nullë„ í—ˆìš©(ë¹„ìƒìš©)
     }
 
-    /// <summary>¸ğ´ŞÀÌ ½º½º·Î ´İÈú ¶§ È£Ãâ(º¸Åë Close() ³»ºÎ¿¡¼­ È£Ãâ)</summary>
+    /// <summary>ëª¨ë‹¬ì´ ìŠ¤ìŠ¤ë¡œ ë‹«í ë•Œ í˜¸ì¶œ(ë³´í†µ Close() ë‚´ë¶€ì—ì„œ í˜¸ì¶œ)</summary>
     public static void Pop()
     {
         if (_closers.Count > 0) _closers.Pop();
     }
 
-    /// <summary>¸Ç À§ ¸ğ´ŞÀ» ´İÀ¸·Á°í ½Ãµµ. ´İ¾ÒÀ¸¸é true.</summary>
+    /// <summary>ë§¨ ìœ„ ëª¨ë‹¬ì„ ë‹«ìœ¼ë ¤ê³  ì‹œë„. ë‹«ì•˜ìœ¼ë©´ true.</summary>
     public static bool TryCloseTop()
     {
         if (_closers.Count == 0) return false;
-        var top = _closers.Peek();      // ¡ÚÁß¿ä: Peek¸¸ ÇÏ°í¡¦
-        if (top != null) top.Invoke();  // ¡¦Close()°¡ ³»ºÎ¿¡¼­ Pop()À» È£Ãâ
-        else Pop();                     // Äİ¹éÀÌ ¾ø´Ù¸é °ÔÀÌÆ®¸¸ ³»¸²(ºñ»ó¿ë)
+        var top = _closers.Peek();      // â˜…ì¤‘ìš”: Peekë§Œ í•˜ê³ â€¦
+        if (top != null) top.Invoke();  // â€¦Close()ê°€ ë‚´ë¶€ì—ì„œ Pop()ì„ í˜¸ì¶œ
+        else Pop();                     // ì½œë°±ì´ ì—†ë‹¤ë©´ ê²Œì´íŠ¸ë§Œ ë‚´ë¦¼(ë¹„ìƒìš©)
         return true;
     }
 }
