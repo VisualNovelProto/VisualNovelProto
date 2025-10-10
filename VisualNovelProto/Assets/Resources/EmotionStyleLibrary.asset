@@ -13,21 +13,75 @@ MonoBehaviour:
   m_Name: EmotionStyleLibrary
   m_EditorClassIdentifier: 
   entries:
-  - key: 
+  - key: calm
     style:
       overrideBodyFont: 0
       bodyFont: {fileID: 0}
       overrideSpeakerFont: 0
       speakerFont: {fileID: 0}
-      overrideBodyTextColor: 0
-      bodyTextColor: {r: 0, g: 0, b: 0, a: 0}
-      overrideSpeakerTextColor: 0
-      speakerTextColor: {r: 0, g: 0, b: 0, a: 0}
+      overrideBodyTextColor: 1
+      bodyTextColor: {r: 0.6313726, g: 0.8078432, b: 0.9843138, a: 1}
+      overrideSpeakerTextColor: 1
+      speakerTextColor: {r: 0.26666668, g: 0.5254902, b: 0.78823537, a: 1}
       overrideBodyPanelSprite: 0
       bodyPanelSprite: {fileID: 0}
       overrideSpeakerPanelSprite: 0
       speakerPanelSprite: {fileID: 0}
-      overrideBodyPanelColor: 0
-      bodyPanelColor: {r: 0, g: 0, b: 0, a: 0}
+      overrideBodyPanelColor: 1
+      bodyPanelColor: {r: 0.91372555, g: 0.96470594, b: 1, a: 1}
       overrideSpeakerPanelColor: 0
       speakerPanelColor: {r: 0, g: 0, b: 0, a: 0}
+  - key: angry
+    style:
+      overrideBodyFont: 0
+      bodyFont: {fileID: 0}
+      overrideSpeakerFont: 1
+      speakerFont: {fileID: 11400000, guid: 2299a763bae1e4748981af8fd323bcfd, type: 2}
+      overrideBodyTextColor: 1
+      bodyTextColor: {r: 0.98823535, g: 0.8117648, b: 0.8117648, a: 1}
+      overrideSpeakerTextColor: 1
+      speakerTextColor: {r: 0.8862746, g: 0.13725491, b: 0.13725491, a: 1}
+      overrideBodyPanelSprite: 0
+      bodyPanelSprite: {fileID: 0}
+      overrideSpeakerPanelSprite: 0
+      speakerPanelSprite: {fileID: 0}
+      overrideBodyPanelColor: 1
+      bodyPanelColor: {r: 1, g: 0.8980393, b: 0.8980393, a: 1}
+      overrideSpeakerPanelColor: 1
+      speakerPanelColor: {r: 0.9960785, g: 0.5411765, b: 0.5411765, a: 1}
+  - key: whisper
+    style:
+      overrideBodyFont: 1
+      bodyFont: {fileID: 11400000, guid: 3ca94778339980d4ebcf24bbe0f9ffab, type: 2}
+      overrideSpeakerFont: 0
+      speakerFont: {fileID: 0}
+      overrideBodyTextColor: 1
+      bodyTextColor: {r: 0.7960785, g: 0.83921576, b: 1, a: 1}
+      overrideSpeakerTextColor: 1
+      speakerTextColor: {r: 0.627451, g: 0.6784314, b: 0.9215687, a: 1}
+      overrideBodyPanelSprite: 0
+      bodyPanelSprite: {fileID: 0}
+      overrideSpeakerPanelSprite: 0
+      speakerPanelSprite: {fileID: 0}
+      overrideBodyPanelColor: 1
+      bodyPanelColor: {r: 0.8862746, g: 0.91372555, b: 1, a: 1}
+      overrideSpeakerPanelColor: 0
+      speakerPanelColor: {r: 0, g: 0, b: 0, a: 0}
+  - key: system
+    style:
+      overrideBodyFont: 1
+      bodyFont: {fileID: 11400000, guid: 2299a763bae1e4748981af8fd323bcfd, type: 2}
+      overrideSpeakerFont: 1
+      speakerFont: {fileID: 11400000, guid: 2299a763bae1e4748981af8fd323bcfd, type: 2}
+      overrideBodyTextColor: 1
+      bodyTextColor: {r: 0.23529413, g: 0.24313727, b: 0.29803926, a: 1}
+      overrideSpeakerTextColor: 1
+      speakerTextColor: {r: 0.18823531, g: 0.19607845, b: 0.25490198, a: 1}
+      overrideBodyPanelSprite: 1
+      bodyPanelSprite: {fileID: 21300000, guid: cf1462bc694c3c249831ad8ac5293aa2, type: 3}
+      overrideSpeakerPanelSprite: 1
+      speakerPanelSprite: {fileID: 21300000, guid: cf1462bc694c3c249831ad8ac5293aa2, type: 3}
+      overrideBodyPanelColor: 1
+      bodyPanelColor: {r: 0.9607844, g: 0.92941183, b: 0.8196079, a: 1}
+      overrideSpeakerPanelColor: 1
+      speakerPanelColor: {r: 0.9058824, g: 0.85098046, b: 0.71764714, a: 1}
