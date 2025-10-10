@@ -662,8 +662,8 @@ public sealed class DialogueUI : MonoBehaviour
             return;
         if (awaitingChoice)
             return;
-        if (PauseMenu.IsPaused || TransitionManager.IsPlaying || UiModalGate.IsOpen)
-            return;
+        //if (PauseMenu.IsPaused || TransitionManager.IsPlaying || UiModalGate.IsOpen)
+        //    return;
 
         ctcIndicator.OnAwaitingInput();
     }
