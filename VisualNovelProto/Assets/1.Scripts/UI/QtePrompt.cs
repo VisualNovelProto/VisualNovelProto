@@ -26,13 +26,18 @@ public sealed class QtePrompt : MonoBehaviour
 
     public void Cancel()
     {
+        CancelInternal(true);
+    }
+
+    void CancelInternal(bool clearCallback)
+    {
         if (countdownCo != null)
         {
             StopCoroutine(countdownCo);
             countdownCo = null;
         }
         if (pulseTarget != null) pulseTarget.localScale = Vector3.one * baseScale;
-        onTimeout = null;
+        if (clearCallback) onTimeout = null;
     }
 
     public void HideImmediate()
@@ -67,7 +72,9 @@ public sealed class QtePrompt : MonoBehaviour
             yield return null;
         }
 
-        Cancel();
-        onTimeout?.Invoke();
+        CancelInternal(false);
+        var timeoutHandler = onTimeout;
+        onTimeout = null;
+        timeoutHandler?.Invoke();
     }
 }

@@ -417,7 +417,7 @@ public sealed class DialogueUI : MonoBehaviour
 
         SetBodyTextForTyping(shown);   //원문(node.text)로 덮어쓰지 않음
         //로그 입력
-        StartCoroutine(CoPushLog(node, speakerText ? speakerText.text : speakerValue, bodyValue));
+        StartCoroutine(CoPushLog(node, speakerText != null ? speakerText.text : speakerValue, bodyValue));
         //if (ChatLogManager.Instance != null)
         //{
         //    int nid = node.nodeId;
