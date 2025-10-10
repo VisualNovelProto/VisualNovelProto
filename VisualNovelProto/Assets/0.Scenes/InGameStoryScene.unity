@@ -21108,6 +21108,12 @@ MonoBehaviour:
   autoUnlockCharacterOnAppear: 1
   speakerText: {fileID: 1597832922}
   bodyText: {fileID: 845385270}
+  speakerPanel: {fileID: 0}
+  bodyPanel: {fileID: 0}
+  defaultSpeakerFont: {fileID: 0}
+  defaultBodyFont: {fileID: 0}
+  emotionStyles: {fileID: 0}
+  interactionLibrary: {fileID: 11400000, guid: 44c59d2ea33515643a7c0d3a69d9bd35, type: 2}
   leftAnchor: {fileID: 953433650}
   centerAnchor: {fileID: 355416585}
   rightAnchor: {fileID: 399387882}
@@ -21130,6 +21136,7 @@ MonoBehaviour:
   - {fileID: 533650056}
   continueWholeScreenButton: {fileID: 2083675880}
   ctcIndicator: {fileID: 1508645148}
+  qtePrompt: {fileID: 0}
   portraitBindings:
   - key: MovLight
     sprite: {fileID: 21300000, guid: 512a80b18b3babe4a92efcc20a7c725b, type: 3}
@@ -27819,8 +27826,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1567310401}
+  - component: {fileID: 1567310402}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: QtePrompt
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -27841,6 +27849,22 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1567310402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567310400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa2f4ad50351446e8f482e4755475dff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fillImage: {fileID: 0}
+  countdownLabel: {fileID: 0}
+  pulseTarget: {fileID: 0}
+  baseScale: 1
 --- !u!1 &1568377045
 GameObject:
   m_ObjectHideFlags: 0
@@ -35914,6 +35938,13 @@ MonoBehaviour:
   defaultFadeTime: 0.35
   defaultShakeAmp: 16
   defaultShakeTime: 0.25
+  cameraTarget: {fileID: 0}
+  cameraPathResourcesFolder: CinematicPaths
+  focusOverlay: {fileID: 0}
+  focusTarget: {fileID: 0}
+  focusFadeTime: 0.35
+  focusDefaultZoom: 1.15
+  focusTint: {r: 0, g: 0, b: 0, a: 0.4}
 --- !u!4 &2085083693
 Transform:
   m_ObjectHideFlags: 0

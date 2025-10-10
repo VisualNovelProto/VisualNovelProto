@@ -495,7 +495,7 @@ public sealed class TransitionManager : MonoBehaviour
         }
 
         var target = _i.focusTarget != null ? _i.focusTarget : _i.cameraTarget;
-        focus = new FocusTask
+        _i.focus = new FocusTask
         {
             active = true,
             t = 0f,
