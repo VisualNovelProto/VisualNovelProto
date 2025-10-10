@@ -590,18 +590,35 @@ public sealed class DialogueUI : MonoBehaviour
         currentVisible = 0;
         bodyText.maxVisibleCharacters = 0; // 0부터 시작
 
-        currentLineHasVisibleCharacters = false;
-        var info = bodyText.textInfo;
-        for (int i = 0; i < info.characterCount; i++)
-        {
-            if (!info.characterInfo[i].isVisible)
-                continue;
-            currentLineHasVisibleCharacters = true;
-            break;
-        }
+        currentLineHasVisibleCharacters = HasDisplayableCharacters(bodyText.textInfo);
 
         if (ctcIndicator != null)
             ctcIndicator.OnLineContentUpdated(currentLineHasVisibleCharacters);
+    }
+
+    bool HasDisplayableCharacters(TMP_TextInfo info)
+    {
+        if (info == null)
+            return false;
+
+        for (int i = 0; i < info.characterCount; i++)
+        {
+            var characterInfo = info.characterInfo[i];
+
+            if (characterInfo.elementType == TMP_TextElementType.Sprite)
+                return true;
+
+            if (characterInfo.elementType != TMP_TextElementType.Character)
+                continue;
+
+            char ch = characterInfo.character;
+            if (ch == 0 || char.IsControl(ch) || char.IsWhiteSpace(ch))
+                continue;
+
+            return true;
+        }
+
+        return false;
     }
 
     void BeginTyping()
