@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5e8974381b44c13bbd5994ea863c657, type: 3}
   m_Name: CtcIndicatorConfig
   m_EditorClassIdentifier: 
-  defaultMode: 1
-  cornerOffset: {x: -48, y: 40}
-  inlineOffset: {x: 18, y: -6}
+  defaultMode: 0
+  cornerOffset: {x: 900, y: -470}
+  inlineOffset: {x: 125, y: -65}
   blinkPeriod: 0.85
   fadeDuration: 0.18
   minimumShowDelay: 0.05

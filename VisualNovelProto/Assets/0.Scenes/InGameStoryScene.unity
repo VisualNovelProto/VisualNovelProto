@@ -21135,6 +21135,10 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 512a80b18b3babe4a92efcc20a7c725b, type: 3}
   - key: MovLin
     sprite: {fileID: 21300000, guid: e905298209486254ea9aec2e60af12f4, type: 3}
+  - key: JuSiWjan
+    sprite: {fileID: 21300000, guid: 6e11761db3a51d243b51b1aadc7c490e, type: 3}
+  - key: OldMan
+    sprite: {fileID: 21300000, guid: 0097335ca8c4ffa4bbeb97906762fd5a, type: 3}
   cgBindings:
   - key: test1
     sprite: {fileID: 21300000, guid: 971ef6f1f0d69764ebc0407cc3885a15, type: 3}
