@@ -1,33 +1,35 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 public sealed class PauseMenu : MonoBehaviour
 {
-    // ¾îµğ¼­µç ÇöÀç ÀÏ½ÃÁ¤Áö »óÅÂ¸¦ È®ÀÎÇÒ ¼ö ÀÖ´Â Àü¿ª ÇÃ·¡±×
+    public static event Action<bool> PauseStateChanged;
+    // ì–´ë””ì„œë“  í˜„ì¬ ì¼ì‹œì •ì§€ ìƒíƒœë¥¼ í™•ì¸í•  ìˆ˜ ìˆëŠ” ì „ì—­ í”Œë˜ê·¸
     public static bool IsPaused { get; private set; }
 
     [Header("Root")]
-    public GameObject rootPanel;              // ÀüÃ¼ ¿À¹ö·¹ÀÌ ÆĞ³Î(ºñÈ°¼º ½ÃÀÛ)
-    public bool useTimeScalePause = true;     // ÇÊ¿ä ¾øÀ¸¸é ²ô±â
-    public bool closeMenuWhenOpenPanels = true; // Glossary/Characters ¿­ ¶§ ¸Ş´º ´İ±â
+    public GameObject rootPanel;              // ì „ì²´ ì˜¤ë²„ë ˆì´ íŒ¨ë„(ë¹„í™œì„± ì‹œì‘)
+    public bool useTimeScalePause = true;     // í•„ìš” ì—†ìœ¼ë©´ ë„ê¸°
+    public bool closeMenuWhenOpenPanels = true; // Glossary/Characters ì—´ ë•Œ ë©”ë‰´ ë‹«ê¸°
 
     [Header("Buttons")]
     public Button btnReturn;
     public Button btnSave;
     public Button btnLoad;
-    public Button btnGlossary;                // ¡Ú »õ·Î Ãß°¡
-    public Button btnCharacters;              // ¡Ú »õ·Î Ãß°¡
+    public Button btnGlossary;                // â˜… ìƒˆë¡œ ì¶”ê°€
+    public Button btnCharacters;              // â˜… ìƒˆë¡œ ì¶”ê°€
     public Button btnOptions;
     public Button btnMainMenu;
     public Button btnExit;
 
     [Header("Panels / Viewers")]
     public OptionsPanel optionPanel;
-    public GlossaryViewer glossaryViewer;     // ¡Ú Á÷Á¢ ¿­±â
-    public CharacterViewer characterViewer;   // ¡Ú Á÷Á¢ ¿­±â
+    public GlossaryViewer glossaryViewer;     // â˜… ì§ì ‘ ì—´ê¸°
+    public CharacterViewer characterViewer;   // â˜… ì§ì ‘ ì—´ê¸°
     public SaveLoadPanel saveLoadPanel;
 
-    [Header("Databases (optional, ºñ¿öµÎ¸é ÀÚµ¿ Å½»ö)")]
+    [Header("Databases (optional, ë¹„ì›Œë‘ë©´ ìë™ íƒìƒ‰)")]
     public GlossaryDatabase glossaryDb;
     public CharacterDatabase characterDb;
 
@@ -59,7 +61,10 @@ public sealed class PauseMenu : MonoBehaviour
 
     public void Toggle()
     {
-        // ESC Åä±Û
+            PauseStateChanged?.Invoke(false);
+        PauseStateChanged?.Invoke(true);
+        PauseStateChanged?.Invoke(false);
+        // ESC í† ê¸€
         if (paused) Close();
         else Open();
     }
@@ -94,10 +99,10 @@ public sealed class PauseMenu : MonoBehaviour
 
     void OpenOptions()
     {
-        // ¿É¼Ç ÆĞ³ÎÀ» µû·Î ¾²¸é ¿©±â¼­ SetActive(true)
+        // ì˜µì…˜ íŒ¨ë„ì„ ë”°ë¡œ ì“°ë©´ ì—¬ê¸°ì„œ SetActive(true)
         if (optionPanel == null)
         {
-            Debug.LogWarning("PauseMenu: optionPanelÀÌ ¿¬°áµÇ¾î ÀÖÁö ¾Ê½À´Ï´Ù.");
+            Debug.LogWarning("PauseMenu: optionPanelì´ ì—°ê²°ë˜ì–´ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤.");
             return;
         }
         if (closeMenuWhenOpenPanels)
@@ -107,20 +112,20 @@ public sealed class PauseMenu : MonoBehaviour
     }
     void SaveMenu()
     {
-        // ³ªÁß¿¡ ¼¼ÀÌºê/·Îµå UI ¿¬°á
+        // ë‚˜ì¤‘ì— ì„¸ì´ë¸Œ/ë¡œë“œ UI ì—°ê²°
         saveLoadPanel.Open(SaveLoadPanel.Mode.Save);
         Debug.Log("Open Load Menu");
     }
     void LoadMenu()
     {
-        // ³ªÁß¿¡ ¼¼ÀÌºê/·Îµå UI ¿¬°á
+        // ë‚˜ì¤‘ì— ì„¸ì´ë¸Œ/ë¡œë“œ UI ì—°ê²°
         saveLoadPanel.Open(SaveLoadPanel.Mode.Load);
         Debug.Log("Open Load Menu");
     }
 
     void OpenGlossary()
     {
-        // DB°¡ ºñ¾î ÀÖÀ¸¸é DialogueUI¿¡¼­ ÀÚµ¿ ÂüÁ¶ °¡Á®¿À±â(1È¸)
+        // DBê°€ ë¹„ì–´ ìˆìœ¼ë©´ DialogueUIì—ì„œ ìë™ ì°¸ì¡° ê°€ì ¸ì˜¤ê¸°(1íšŒ)
         if (glossaryDb == null)
         {
             var ui = FindObjectOfType<DialogueUI>();
@@ -129,7 +134,7 @@ public sealed class PauseMenu : MonoBehaviour
 
         if (glossaryViewer == null)
         {
-            Debug.LogWarning("PauseMenu: glossaryViewer °¡ ¿¬°áµÇ¾î ÀÖÁö ¾Ê½À´Ï´Ù.");
+            Debug.LogWarning("PauseMenu: glossaryViewer ê°€ ì—°ê²°ë˜ì–´ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -147,7 +152,7 @@ public sealed class PauseMenu : MonoBehaviour
 
         if (characterViewer == null)
         {
-            Debug.LogWarning("PauseMenu: characterViewer °¡ ¿¬°áµÇ¾î ÀÖÁö ¾Ê½À´Ï´Ù.");
+            Debug.LogWarning("PauseMenu: characterViewer ê°€ ì—°ê²°ë˜ì–´ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -158,7 +163,7 @@ public sealed class PauseMenu : MonoBehaviour
     void ReturnToMainMenu()
     {
         Debug.Log("Go to Main Menu");
-        // ¾À ÀüÈ¯ µî
+        // ì”¬ ì „í™˜ ë“±
     }
 
     void ExitGame()
