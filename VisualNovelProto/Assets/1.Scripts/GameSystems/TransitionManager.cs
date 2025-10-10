@@ -9,8 +9,6 @@ using UnityEngine.UI;
 ///   "fade_out(t=0.4);fade_in(t=0.3,delay=0.4)"
 ///   "blackout" / "shake(t=0.3,amp=18)"
 ///   "mask(name=left_to_right; time=0.6; invert=0; soft=0.02; color=#000000)"
-    public static event Action<bool> StateChanged;
-        int prevCount = _activeCount;
 /// - 캐릭터 연출은 DialogueUI에서 TransitionManager.PlayActorIn(...) 호출.
 /// </summary>
 public sealed class TransitionManager : MonoBehaviour
@@ -36,6 +34,7 @@ public sealed class TransitionManager : MonoBehaviour
     public static bool IsPlaying => _activeCount > 0;
     static TransitionManager _i;
     static int _activeCount;
+    public static event Action<bool> StateChanged;
 
     [Header("Screen Targets")]
     public Image fadeOverlay;          // 전체 화면 덮는 검은 이미지(알파 애니메이션)
@@ -75,6 +74,7 @@ public sealed class TransitionManager : MonoBehaviour
     void Update()
     {
         float dt = useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+        int prevCount = _activeCount;
         int alive = 0;
 
         // Fade
