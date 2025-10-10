@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -46,14 +47,28 @@ public sealed class TransitionManager : MonoBehaviour
     public float defaultShakeAmp = 16f;
     public float defaultShakeTime = 0.25f;
 
+    [Header("Camera Motion")]
+    public RectTransform cameraTarget;
+    public string cameraPathResourcesFolder = "CinematicPaths";
+
+    [Header("Focus & Perspective")]
+    public Image focusOverlay;
+    public RectTransform focusTarget;
+    public float focusFadeTime = 0.35f;
+    public float focusDefaultZoom = 1.15f;
+    public Color focusTint = new Color(0f, 0f, 0f, 0.4f);
+
     // ===== Internal: 고정 풀 =====
     const int MaxFade = 16;
     const int MaxShake = 4;
     const int MaxActor = 12;
+    const int MaxCamera = 4;
 
     FadeTask[] fades = new FadeTask[MaxFade];
     ShakeTask[] shakes = new ShakeTask[MaxShake];
     ActorTask[] actors = new ActorTask[MaxActor];
+    CameraTask[] cameras = new CameraTask[MaxCamera];
+    FocusTask focus;
 
     void Awake()
     {
@@ -61,7 +76,9 @@ public sealed class TransitionManager : MonoBehaviour
         for (int i = 0; i < MaxFade; i++) fades[i].active = false;
         for (int i = 0; i < MaxShake; i++) shakes[i].active = false;
         for (int i = 0; i < MaxActor; i++) actors[i].active = false;
+        for (int i = 0; i < MaxCamera; i++) cameras[i].active = false;
         mask.active = false;
+        focus.active = false;
 
         if (fadeOverlay != null)
         {
@@ -69,6 +86,11 @@ public sealed class TransitionManager : MonoBehaviour
             fadeOverlay.gameObject.SetActive(true); // 항상 켜두되 알파 0
         }
         if (maskOverlay != null) maskOverlay.gameObject.SetActive(false);
+        if (focusOverlay != null)
+        {
+            var c = focusOverlay.color; c.a = 0f; focusOverlay.color = c;
+            focusOverlay.gameObject.SetActive(false);
+        }
     }
 
     void Update()
@@ -175,6 +197,41 @@ public sealed class TransitionManager : MonoBehaviour
             }
         }
 
+        // Camera Paths
+        for (int i = 0; i < MaxCamera; i++)
+            if (cameras[i].active)
+            {
+                alive++;
+                var cam = cameras[i];
+                cam.t += dt;
+                float progress = Mathf.Clamp01((cam.t - cam.delay) / Mathf.Max(0.0001f, cam.dur));
+                float eased = EvaluateCurve(cam.curve, progress);
+                ApplyCameraTask(ref cam, eased);
+                if (cam.t >= cam.delay + cam.dur)
+                {
+                    ApplyCameraTask(ref cam, 1f);
+                    cam.active = false;
+                }
+                cameras[i] = cam;
+            }
+
+        // Focus / Perspective
+        if (focus.active)
+        {
+            alive++;
+            focus.t += dt;
+            float progress = Mathf.Clamp01((focus.t - focus.delay) / Mathf.Max(0.0001f, focus.dur));
+            float eased = Ease(Easing.Smooth, progress);
+            ApplyFocusTask(ref focus, eased);
+            if (focus.t >= focus.delay + focus.dur)
+            {
+                ApplyFocusTask(ref focus, 1f);
+                focus.active = false;
+                if (focusOverlay != null && focusOverlay.color.a <= 0.001f)
+                    focusOverlay.gameObject.SetActive(false);
+            }
+        }
+
         _activeCount = alive;
         if ((prevCount > 0) != (_activeCount > 0))
             StateChanged?.Invoke(_activeCount > 0);
@@ -210,6 +267,7 @@ public sealed class TransitionManager : MonoBehaviour
 
         float t = _i.defaultFadeTime, delay = 0f, amp = _i.defaultShakeAmp;
         string mName = null; bool invert = false; float soft = 0.02f; Color mColor = Color.black;
+        string mode = null; string pointsSpec = null; float zoom = 1f; bool hasZoom = false;
 
         if (!string.IsNullOrEmpty(args))
         {
@@ -229,6 +287,9 @@ public sealed class TransitionManager : MonoBehaviour
                     var hex = s.Substring(6).Trim();
                     ColorUtility.TryParseHtmlString(hex, out mColor);
                 }
+                else if (s.StartsWith("mode=", StringComparison.OrdinalIgnoreCase)) mode = s.Substring(5).Trim();
+                else if (s.StartsWith("zoom=", StringComparison.OrdinalIgnoreCase) && float.TryParse(s.Substring(5), out v)) { zoom = Mathf.Max(0.01f, v); hasZoom = true; }
+                else if (s.StartsWith("points=", StringComparison.OrdinalIgnoreCase)) pointsSpec = s.Substring(7).Trim();
             }
         }
 
@@ -238,6 +299,9 @@ public sealed class TransitionManager : MonoBehaviour
         else if (name.Equals("clearout", StringComparison.OrdinalIgnoreCase)) EnqueueFade(1f, 0f, 0f, 0f);
         else if (name.Equals("shake", StringComparison.OrdinalIgnoreCase)) EnqueueShake(t, amp, delay);
         else if (name.Equals("mask", StringComparison.OrdinalIgnoreCase)) EnqueueMask(mName, t, delay, invert, soft, mColor);
+        else if (name.Equals("camera_path", StringComparison.OrdinalIgnoreCase)) EnqueueCameraPath(mName, pointsSpec, t, delay, hasZoom, zoom, mode);
+        else if (name.Equals("focus", StringComparison.OrdinalIgnoreCase)) EnqueueFocus(t, delay, hasZoom ? zoom : _i.focusDefaultZoom, mColor);
+        else if (name.Equals("perspective", StringComparison.OrdinalIgnoreCase)) EnqueuePerspective(mode, t, delay, hasZoom ? zoom : _i.focusDefaultZoom, mColor);
         // 필요 시 추가: flash, blur 등
     }
 
@@ -314,6 +378,162 @@ public sealed class TransitionManager : MonoBehaviour
             overlay = _i.maskOverlay,
             mat = _i._maskMat
         };
+    }
+
+    static AnimationCurve EvaluateCurve(AnimationCurve curve) => curve != null && curve.length > 0 ? curve : AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+    static float EvaluateCurve(AnimationCurve curve, float t)
+    {
+        var c = EvaluateCurve(curve);
+        return c.Evaluate(Mathf.Clamp01(t));
+    }
+
+    static Vector3[] ParseCameraPoints(string spec)
+    {
+        if (string.IsNullOrWhiteSpace(spec)) return null;
+        var tokens = spec.Split('|');
+        List<Vector3> pts = new List<Vector3>(tokens.Length);
+        for (int i = 0; i < tokens.Length; i++)
+        {
+            string token = tokens[i].Trim();
+            if (string.IsNullOrEmpty(token)) continue;
+            var comps = token.Split(',');
+            if (comps.Length < 2) continue;
+            if (!float.TryParse(comps[0], out float x)) continue;
+            if (!float.TryParse(comps[1], out float y)) continue;
+            float z = 1f;
+            if (comps.Length >= 3 && float.TryParse(comps[2], out float zVal)) z = Mathf.Max(0.01f, zVal);
+            pts.Add(new Vector3(x, y, z));
+        }
+        return pts.Count >= 2 ? pts.ToArray() : null;
+    }
+
+    static void EnqueueCameraPath(string name, string inlinePoints, float time, float delay, bool hasZoom, float zoom, string mode)
+    {
+        if (_i == null || _i.cameraTarget == null) return;
+
+        Vector3[] points = null;
+        bool relative = true;
+        AnimationCurve curve = null;
+
+        if (!string.IsNullOrEmpty(inlinePoints))
+        {
+            points = ParseCameraPoints(inlinePoints);
+            relative = !string.Equals(mode, "absolute", StringComparison.OrdinalIgnoreCase);
+        }
+        else if (!string.IsNullOrEmpty(name))
+        {
+            string path = string.IsNullOrEmpty(_i.cameraPathResourcesFolder) ? name : (_i.cameraPathResourcesFolder + "/" + name);
+            var asset = Resources.Load<CinematicCameraPath>(path);
+            if (asset != null && asset.nodes != null && asset.nodes.Length >= 2)
+            {
+                points = new Vector3[asset.nodes.Length];
+                for (int i = 0; i < asset.nodes.Length; i++)
+                {
+                    points[i] = new Vector3(asset.nodes[i].position.x, asset.nodes[i].position.y, asset.nodes[i].zoom <= 0f ? 1f : asset.nodes[i].zoom);
+                }
+                relative = asset.relative;
+                curve = asset.easing;
+            }
+        }
+
+        if (points == null || points.Length < 2) return;
+
+        for (int i = 0; i < MaxCamera; i++)
+            if (!_i.cameras[i].active)
+            {
+                var task = new CameraTask
+                {
+                    active = true,
+                    t = 0f,
+                    dur = time > 0f ? time : _i.defaultFadeTime,
+                    delay = Mathf.Max(0f, delay),
+                    points = points,
+                    curve = curve,
+                    relative = relative,
+                    target = _i.cameraTarget,
+                    basePos = _i.cameraTarget.anchoredPosition,
+                    baseScale = _i.cameraTarget.localScale,
+                    overrideZoom = hasZoom,
+                    targetZoom = zoom
+                };
+                _i.cameras[i] = task;
+                return;
+            }
+    }
+
+    static void ApplyCameraTask(ref CameraTask task, float eased)
+    {
+        if (task.target == null || task.points == null || task.points.Length < 2) return;
+
+        float segments = task.points.Length - 1;
+        float scaled = Mathf.Clamp01(eased) * segments;
+        int segIndex = Mathf.Min(task.points.Length - 2, Mathf.FloorToInt(scaled));
+        float segT = Mathf.Clamp01(scaled - segIndex);
+
+        Vector3 start = task.points[segIndex];
+        Vector3 end = task.points[segIndex + 1];
+        Vector3 pos = Vector3.Lerp(start, end, segT);
+
+        Vector2 targetPos = task.relative ? task.basePos + new Vector2(pos.x, pos.y) : new Vector2(pos.x, pos.y);
+        task.target.anchoredPosition = targetPos;
+
+        float zoomStart = start.z <= 0f ? 1f : start.z;
+        float zoomEnd = end.z <= 0f ? zoomStart : end.z;
+        float zoomFactor = task.overrideZoom ? Mathf.Lerp(1f, task.targetZoom, eased) : Mathf.Lerp(zoomStart, zoomEnd, segT);
+        task.target.localScale = task.baseScale * zoomFactor;
+    }
+
+    static void EnqueueFocus(float time, float delay, float zoom, Color color)
+    {
+        if (_i == null) return;
+
+        float dur = time > 0f ? time : _i.focusFadeTime;
+        if (_i.focusOverlay != null)
+        {
+            _i.focusOverlay.gameObject.SetActive(true);
+        }
+
+        var target = _i.focusTarget != null ? _i.focusTarget : _i.cameraTarget;
+        focus = new FocusTask
+        {
+            active = true,
+            t = 0f,
+            dur = dur,
+            delay = Mathf.Max(0f, delay),
+            fromColor = _i.focusOverlay ? _i.focusOverlay.color : Color.clear,
+            toColor = color,
+            target = target,
+            fromScale = target != null ? target.localScale : Vector3.one,
+            toScale = target != null ? target.localScale * zoom : Vector3.one * zoom
+        };
+    }
+
+    static void EnqueuePerspective(string mode, float time, float delay, float zoom, Color color)
+    {
+        if (_i == null) return;
+        Color targetColor = color.a > 0f ? color : _i.focusTint;
+        float targetZoom = zoom;
+        if (!string.IsNullOrEmpty(mode) && mode.Equals("reset", StringComparison.OrdinalIgnoreCase))
+        {
+            targetColor = new Color(targetColor.r, targetColor.g, targetColor.b, 0f);
+            targetZoom = 1f;
+        }
+        EnqueueFocus(time, delay, targetZoom, targetColor);
+    }
+
+    static void ApplyFocusTask(ref FocusTask task, float eased)
+    {
+        if (_i.focusOverlay != null)
+        {
+            Color c = Color.Lerp(task.fromColor, task.toColor, eased);
+            _i.focusOverlay.color = c;
+            if (c.a > 0f) _i.focusOverlay.gameObject.SetActive(true);
+        }
+        if (task.target != null)
+        {
+            task.target.localScale = Vector3.Lerp(task.fromScale, task.toScale, eased);
+        }
     }
 
     // ===== Public API: Actor(초상) =====
@@ -406,6 +626,28 @@ public sealed class TransitionManager : MonoBehaviour
 
         for (int i = 0; i < MaxActor; i++) _i.actors[i].active = false;
 
+        for (int i = 0; i < MaxCamera; i++)
+        {
+            if (_i.cameras[i].active && _i.cameras[i].target)
+            {
+                _i.cameras[i].target.anchoredPosition = _i.cameras[i].basePos;
+                _i.cameras[i].target.localScale = _i.cameras[i].baseScale;
+            }
+            _i.cameras[i].active = false;
+        }
+
+        if (_i.focus.active)
+        {
+            if (_i.focusOverlay != null)
+            {
+                var c = _i.focusOverlay.color; c.a = 0f; _i.focusOverlay.color = c;
+                _i.focusOverlay.gameObject.SetActive(false);
+            }
+            if (_i.focus.target != null)
+                _i.focus.target.localScale = _i.focus.fromScale;
+            _i.focus.active = false;
+        }
+
         if (_i.mask.active)
         {
             _i.mask.active = false;
@@ -431,6 +673,29 @@ public sealed class TransitionManager : MonoBehaviour
         public RectTransform target;
         public Vector2 basePos;
         public int seed, frame;
+    }
+
+    struct CameraTask
+    {
+        public bool active;
+        public float t, dur, delay;
+        public Vector3[] points;
+        public AnimationCurve curve;
+        public bool relative;
+        public RectTransform target;
+        public Vector2 basePos;
+        public Vector3 baseScale;
+        public bool overrideZoom;
+        public float targetZoom;
+    }
+
+    struct FocusTask
+    {
+        public bool active;
+        public float t, dur, delay;
+        public Color fromColor, toColor;
+        public RectTransform target;
+        public Vector3 fromScale, toScale;
     }
 
     enum ActorMode { Fade, Pop, Slide }
