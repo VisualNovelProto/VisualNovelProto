@@ -8,8 +8,6 @@ public sealed class AutoAdvanceManager : MonoBehaviour
 
     [Header("Timing")]
     public bool useUnscaledTime = false;
-        if (ui != null)
-            ui.OnAutoModeChanged(autoEnabled);
     public float baseDelay = 0.4f;     // 기본 대기
     public float perChar = 0.03f;      // 글자당 가중
     public float minDelay = 0.3f;      // 하한
@@ -34,6 +32,9 @@ public sealed class AutoAdvanceManager : MonoBehaviour
         autoEnabled = on;
         timer = 0f;
         prevTyping = ui ? ui.IsTypingPublic : false;
+
+        if (ui != null)
+            ui.OnAutoModeChanged(autoEnabled);
     }
 
     void Update()
