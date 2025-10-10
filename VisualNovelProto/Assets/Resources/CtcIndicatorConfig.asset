@@ -11,8 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5e8974381b44c13bbd5994ea863c657, type: 3}
   m_Name: CtcIndicatorConfig
-  m_EditorClassIdentifier:
-  defaultMode: 0
+  m_EditorClassIdentifier: 
+  defaultMode: 1
   cornerOffset: {x: -48, y: 40}
   inlineOffset: {x: 18, y: -6}
   blinkPeriod: 0.85
