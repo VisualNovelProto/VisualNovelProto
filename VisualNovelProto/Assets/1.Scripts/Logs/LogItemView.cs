@@ -5,52 +5,69 @@ using UnityEngine.UI;
 
 public sealed class LogItemView : MonoBehaviour
 {
+    [Header("Text")]
+    public TextMeshProUGUI speakerText;
+    public TextMeshProUGUI bodyText;
+    public Graphic zebraBackground;
+
     [Header("Voice (Optional)")]
     public GameObject voiceButtonRoot;
     public Button voiceButton;
 
-    public void Bind(ChatLogManager.LogEntry e, bool showNodeId, int zebraIndex, bool showVoiceButton, Action onVoiceClicked)
-
-        if (voiceButtonRoot) voiceButtonRoot.SetActive(showVoiceButton);
-
-        if (voiceButton)
-        {
-            voiceButton.onClick.RemoveAllListeners();
-            var handler = showVoiceButton ? onVoiceClicked : null;
-            bool interactable = handler != null;
-            voiceButton.interactable = interactable;
-            if (interactable)
-            {
-                voiceButton.onClick.AddListener(() => handler());
-            }
-        }
-    public TextMeshProUGUI speakerText;//인물
-    public TextMeshProUGUI bodyText;//대사
-
-    [Header("Style (기본값)")]
+    [Header("Style Defaults")]
     public float speakerFontSize = 28f;
     public float bodyFontSize = 32f;
     public Color speakerColor = Color.white;
     public Color bodyColor = Color.white;
 
-    public void Bind(ChatLogManager.LogEntry e, bool showNodeId, int zebraIndex)
+    public void Bind(ChatLogManager.LogEntry entry, bool showNodeId, int zebraIndex,
+                     bool showVoiceButton, Action onVoiceClicked)
     {
-        if (bg) bg.enabled = (zebraIndex & 1) == 1; // 홀짝 줄무늬
+        if (zebraBackground != null)
+            zebraBackground.enabled = (zebraIndex & 1) == 1;
 
-        if (speakerText)
+        if (speakerText != null)
         {
             speakerText.fontSize = speakerFontSize;
             speakerText.color = speakerColor;
-            speakerText.text = string.IsNullOrEmpty(e.speaker)
-                ? ""
-                : (showNodeId ? $"[{e.nodeId}] {e.speaker}" : e.speaker);
+            if (string.IsNullOrEmpty(entry.speaker))
+            {
+                speakerText.text = string.Empty;
+            }
+            else if (showNodeId)
+            {
+                speakerText.text = $"[{entry.nodeId}] {entry.speaker}";
+            }
+            else
+            {
+                speakerText.text = entry.speaker;
+            }
         }
 
-        if (bodyText)
+        if (bodyText != null)
         {
             bodyText.fontSize = bodyFontSize;
             bodyText.color = bodyColor;
-            bodyText.text = e.bodyRich; // 리치 텍스트 유지
+            bodyText.text = entry.bodyRich ?? string.Empty;
+        }
+
+        BindVoiceButton(showVoiceButton, onVoiceClicked);
+    }
+
+    void BindVoiceButton(bool showVoiceButton, Action onVoiceClicked)
+    {
+        if (voiceButtonRoot != null)
+            voiceButtonRoot.SetActive(showVoiceButton);
+
+        if (voiceButton == null)
+            return;
+
+        voiceButton.onClick.RemoveAllListeners();
+        bool interactable = showVoiceButton && onVoiceClicked != null;
+        voiceButton.interactable = interactable;
+        if (interactable)
+        {
+            voiceButton.onClick.AddListener(() => onVoiceClicked());
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public sealed class AutoAdvanceManager : MonoBehaviour
@@ -15,6 +16,8 @@ public sealed class AutoAdvanceManager : MonoBehaviour
 
     [Header("State")]
     public bool autoEnabled;
+
+    public event Action<bool> AutoModeChanged;
 
     float timer;
     bool prevTyping;
@@ -35,6 +38,8 @@ public sealed class AutoAdvanceManager : MonoBehaviour
 
         if (ui != null)
             ui.OnAutoModeChanged(autoEnabled);
+
+        AutoModeChanged?.Invoke(autoEnabled);
     }
 
     void Update()

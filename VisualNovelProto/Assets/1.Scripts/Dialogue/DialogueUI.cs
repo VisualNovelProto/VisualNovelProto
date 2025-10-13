@@ -1382,6 +1382,7 @@ public sealed class DialogueUI : MonoBehaviour
         if (TransitionManager.IsPlaying) return;
         if (UiModalGate.IsOpen) return;
         if (awaitingChoice) return;
+        if (OnAdvanceInput()) return;
         if (ctcIndicator != null) ctcIndicator.OnAdvanceConsumed();
         if (runner != null) runner.Step();
     }

@@ -1,68 +1,121 @@
+using System;
 using UnityEngine;
 
+/// <summary>
+/// Stores dialogue history in a circular buffer so that the UI can build a chat log.
+/// </summary>
 public sealed class ChatLogManager : MonoBehaviour
 {
     public static ChatLogManager Instance { get; private set; }
 
-    [System.Serializable]
+    [Serializable]
     public struct LogEntry
     {
         public int nodeId;
         public string speaker;
+        public string bodyRich;
         public string voiceKey;
-    public void Push(int nodeId, string speaker, string bodyRich, string voiceKey = null)
-        buf[i].voiceKey = string.IsNullOrEmpty(voiceKey) ? string.Empty : voiceKey;
+
+        public bool HasVoice => !string.IsNullOrEmpty(voiceKey);
     }
 
     [Header("Capacity")]
-    public int capacity = 256;          // 원형 버퍼 크기
-    public int defaultExportCount = 50; // 뷰어 기본 표시 라인 수
+    [Tooltip("Number of entries kept in memory. Oldest entries are discarded first.")]
+    [Min(32)]
+    public int capacity = 256;
+    [Tooltip("Default amount exported when a viewer asks for entries.")]
+    public int defaultExportCount = 50;
 
-    LogEntry[] buf;
-    int head;   // 다음 쓰기 위치
-    int count;  // 누적 수(<= capacity)
+    LogEntry[] buffer;
+    int head;   // Next write position
+    int count;  // Number of valid entries currently stored (<= capacity)
+
+    public event Action OnLogUpdated;
 
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(this); return; }
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this);
+            return;
+        }
+
         Instance = this;
-        if (capacity < 32) capacity = 32;
-        buf = new LogEntry[capacity];
-        head = 0; count = 0;
+        capacity = Mathf.Max(32, capacity);
+        buffer = new LogEntry[capacity];
+        head = 0;
+        count = 0;
     }
+
     void OnDestroy()
     {
-        // ★ 파괴될 때 싱글턴 해제
-        if (Instance == this) Instance = null;
-    }
-
-    public void Clear() { head = 0; count = 0; }
-
-    public void Push(int nodeId, string speaker, string bodyRich)
-    {
-        int i = head;
-        buf[i].nodeId = nodeId;
-        buf[i].speaker = speaker ?? string.Empty;
-        buf[i].bodyRich = bodyRich ?? string.Empty;
-
-        head = (head + 1) % capacity;
-        if (count < capacity) count++;
-    }
-
-    /// <summary>최근 n개를 outBuf에 앞에서부터(오래된 → 최신) 채워 반환. 실제 채운 수 리턴.</summary>
-    public int CopyLatest(LogEntry[] outBuf, int n)
-    {
-        if (outBuf == null || outBuf.Length == 0 || n <= 0) return 0;
-        n = Mathf.Min(n, count, outBuf.Length);
-
-        int start = (head - n + capacity) % capacity;
-        for (int k = 0; k < n; k++)
-        {
-            int src = (start + k) % capacity;
-            outBuf[k] = buf[src];
-        }
-        return n;
+        if (Instance == this)
+            Instance = null;
     }
 
     public int Count => count;
+
+    public void Clear()
+    {
+        head = 0;
+        count = 0;
+        if (buffer != null)
+            Array.Clear(buffer, 0, buffer.Length);
+        OnLogUpdated?.Invoke();
+    }
+
+    /// <summary>
+    /// Adds a new entry to the log.
+    /// </summary>
+    public void Push(int nodeId, string speaker, string bodyRich, string voiceKey = null)
+    {
+        if (buffer == null || buffer.Length == 0)
+            return;
+
+        int index = head;
+        buffer[index].nodeId = nodeId;
+        buffer[index].speaker = speaker ?? string.Empty;
+        buffer[index].bodyRich = bodyRich ?? string.Empty;
+        buffer[index].voiceKey = string.IsNullOrEmpty(voiceKey) ? string.Empty : voiceKey;
+
+        head = (head + 1) % capacity;
+        if (count < capacity)
+            count++;
+
+        OnLogUpdated?.Invoke();
+    }
+
+    /// <summary>
+    /// Copies the most recent <paramref name="n"/> entries into <paramref name="outBuf"/>.
+    /// Entries are written in chronological order (oldest to newest).
+    /// Returns the number of entries copied.
+    /// </summary>
+    public int CopyLatest(LogEntry[] outBuf, int n)
+    {
+        if (outBuf == null || outBuf.Length == 0 || n <= 0 || count == 0)
+            return 0;
+
+        int copyCount = Mathf.Min(n, count, outBuf.Length);
+        int start = (head - copyCount + capacity) % capacity;
+        for (int i = 0; i < copyCount; i++)
+        {
+            int src = (start + i) % capacity;
+            outBuf[i] = buffer[src];
+        }
+        return copyCount;
+    }
+
+    /// <summary>
+    /// Tries to fetch an entry by index relative to the newest entry (0 = newest).
+    /// </summary>
+    public bool TryGetFromNewest(int indexFromNewest, out LogEntry entry)
+    {
+        entry = default;
+        if (indexFromNewest < 0 || indexFromNewest >= count || buffer == null || buffer.Length == 0)
+            return false;
+
+        int idx = (head - 1 - indexFromNewest + capacity) % capacity;
+        entry = buffer[idx];
+        return true;
+    }
 }
