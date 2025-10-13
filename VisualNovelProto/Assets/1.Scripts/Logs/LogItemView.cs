@@ -1,14 +1,33 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public sealed class LogItemView : MonoBehaviour
 {
-    public Image bg;//ÁÙ¹«´Ì
-    public TextMeshProUGUI speakerText;//ÀÎ¹°
-    public TextMeshProUGUI bodyText;//´ë»ç
+    [Header("Voice (Optional)")]
+    public GameObject voiceButtonRoot;
+    public Button voiceButton;
 
-    [Header("Style (±âº»°ª)")]
+    public void Bind(ChatLogManager.LogEntry e, bool showNodeId, int zebraIndex, bool showVoiceButton, Action onVoiceClicked)
+
+        if (voiceButtonRoot) voiceButtonRoot.SetActive(showVoiceButton);
+
+        if (voiceButton)
+        {
+            voiceButton.onClick.RemoveAllListeners();
+            var handler = showVoiceButton ? onVoiceClicked : null;
+            bool interactable = handler != null;
+            voiceButton.interactable = interactable;
+            if (interactable)
+            {
+                voiceButton.onClick.AddListener(() => handler());
+            }
+        }
+    public TextMeshProUGUI speakerText;//ì¸ë¬¼
+    public TextMeshProUGUI bodyText;//ëŒ€ì‚¬
+
+    [Header("Style (ê¸°ë³¸ê°’)")]
     public float speakerFontSize = 28f;
     public float bodyFontSize = 32f;
     public Color speakerColor = Color.white;
@@ -16,7 +35,7 @@ public sealed class LogItemView : MonoBehaviour
 
     public void Bind(ChatLogManager.LogEntry e, bool showNodeId, int zebraIndex)
     {
-        if (bg) bg.enabled = (zebraIndex & 1) == 1; // È¦Â¦ ÁÙ¹«´Ì
+        if (bg) bg.enabled = (zebraIndex & 1) == 1; // í™€ì§ ì¤„ë¬´ëŠ¬
 
         if (speakerText)
         {
@@ -31,7 +50,7 @@ public sealed class LogItemView : MonoBehaviour
         {
             bodyText.fontSize = bodyFontSize;
             bodyText.color = bodyColor;
-            bodyText.text = e.bodyRich; // ¸®Ä¡ ÅØ½ºÆ® À¯Áö
+            bodyText.text = e.bodyRich; // ë¦¬ì¹˜ í…ìŠ¤íŠ¸ ìœ ì§€
         }
     }
 }

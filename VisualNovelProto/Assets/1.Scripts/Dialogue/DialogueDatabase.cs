@@ -20,7 +20,7 @@ public sealed class DialogueDatabase : ScriptableObject
     [NonSerialized] public int[] nodeIndexById = CreateIndex();
     static int[] CreateIndex() { var a = new int[MaxNodes]; for (int i = 0; i < a.Length; i++) a[i] = -1; return a; }
 
-    // (Âü°í¿ë) transition Æ÷ÇÔ Çì´õ
+        "Index,nodeId,rowType,speaker,text,voice,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq";
     public const string CsvHeaderNew =
         "Index,nodeId,rowType,speaker,text,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq";
 
@@ -116,11 +116,12 @@ public sealed class DialogueDatabase : ScriptableObject
         node.rowType = f.rowType;
         node.speaker = f.speaker;
         node.text = f.text;
+        node.voice = f.voice;
 
         string spec = f.actors?.Trim();
         if (!string.IsNullOrEmpty(spec))
         {
-            // ±¸Çü(´ÜÀÏ Å°¸¸) ÀÚµ¿ È®Àå
+            // êµ¬í˜•(ë‹¨ì¼ í‚¤ë§Œ) ìžë™ í™•ìž¥
             bool looksLikeLegacyKey = (spec.IndexOf('@') < 0) && (spec.IndexOf(';') < 0) && (spec.IndexOf(' ') < 0);
             node.actors = looksLikeLegacyKey ? $"{spec}@C(in=fade)" : spec;
         }
@@ -132,7 +133,7 @@ public sealed class DialogueDatabase : ScriptableObject
         node.bgm = f.bgm;
         node.sfx = f.sfx;
         node.cg = f.cg;
-        node.transition = f.transition; // transition ¸ÅÇÎ
+        node.transition = f.transition; // transition ë§¤í•‘
         node.advancePolicy = f.advancePolicy;
         node.nextNodeId = SafeAtoi(f.nextNodeIdText);
 
@@ -159,7 +160,7 @@ public sealed class DialogueDatabase : ScriptableObject
         choiceCount++;
     }
 
-    // ========= ¿ÜºÎ¿¡ ³ëÃâµÇ´Â Á¶È¸ API =========
+    // ========= ì™¸ë¶€ì— ë…¸ì¶œë˜ëŠ” ì¡°íšŒ API =========
 
     public bool TryGetNodeById(int nodeId, out DialogueNode node, out int index)
     {
@@ -181,21 +182,22 @@ public sealed class DialogueDatabase : ScriptableObject
         return new ReadOnlySpan<Choice>(choicesPool, node.choiceOffset, node.choiceCount);
     }
 
-    // ========= CSV ÆÄ½Ì =========
+        public string speaker, text, voice, actors, bgm, sfx, cg, transition, advancePolicy, nextNodeIdText;
 
-    struct CsvFields
-    {
-        public string indexKey, nodeIdText, rowType;
-        public string speaker, text, actors, bgm, sfx, cg, transition, advancePolicy, nextNodeIdText;
-        public string choiceLabel, choiceGoto, choiceSet;
-        public string flagsSet, flagsReq;
-        public string choices; // (±¸¹æ½Ä È£È¯¿ë, ÇöÀç´Â ¹Ì»ç¿ë)
-    }
-
-    static void ParseCsvLine(string line, out CsvFields f)
-    {
-        // 16Ä­(transition Æ÷ÇÔ)
-        string[] slots = new string[17];
+        string[] slots = new string[18];
+            voice = slots[5],
+            actors = slots[6],
+            bgm = slots[7],
+            sfx = slots[8],
+            cg = slots[9],
+            transition = slots[10],
+            advancePolicy = slots[11],
+            nextNodeIdText = slots[12],
+            choiceLabel = slots[13],
+            choiceGoto = slots[14],
+            choiceSet = slots[15],
+            flagsSet = slots[16],
+            flagsReq = slots[17],
         int si = 0;
         var sb = new StringBuilder(256);
         bool inQuote = false;

@@ -21,12 +21,13 @@ public struct DialogueNode
 
     public string speaker;
     public string text;
+    public string voice;
     public string actors;
     public string bgm;
     public string sfx;
     public string cg;
     public string transition;
-    public string advancePolicy; //"block" | "fast" | "fastforward" | ""(�⺻)
+    public string advancePolicy; //"block" | "fast" | "fastforward" | ""(±âº»)
 
     public int nextNodeId;
 

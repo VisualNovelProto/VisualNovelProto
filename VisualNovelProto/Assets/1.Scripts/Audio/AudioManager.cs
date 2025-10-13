@@ -11,11 +11,31 @@ public sealed class AudioManager : MonoBehaviour
     public AudioBank sfxBank;
 
     [Header("BGM")]
-    public int bgmChannels = 2;          // ±³Â÷ÆäÀÌµå¿ë 2Ã¤³Î
+    [Header("Voice")]
+    public bool voicePlaybackEnabled = true;
+    public AudioBank voiceBank;
+    public string resourcesFolderVoice = "Audio/Voice";
+    public float voiceDefaultVolume = 1f;
+
+    AudioSource voiceSource;
+    float currentVoiceBaseVolume = 1f;
+    string currentVoiceKey;
+
+        voiceSource = gameObject.AddComponent<AudioSource>();
+        voiceSource.playOnAwake = false; voiceSource.loop = false; voiceSource.spatialBlend = 0f;
+        voiceSource.volume = 0f;
+
+        if (!voicePlaybackEnabled && voiceSource != null && voiceSource.isPlaying)
+        {
+            voiceSource.Stop();
+            voiceSource.clip = null;
+            currentVoiceKey = null;
+        }
+    public int bgmChannels = 2;          // êµì°¨í˜ì´ë“œìš© 2ì±„ë„
     public float bgmDefaultFade = 0.8f;
 
     [Header("SFX")]
-    public int sfxVoices = 16;           // µ¿½Ã ¹ßÀ½ ¼ö
+    public int sfxVoices = 16;           // ë™ì‹œ ë°œìŒ ìˆ˜
     public float sfxDefaultVolume = 1f;
 
     [Header("Fallback")]
@@ -23,11 +43,11 @@ public sealed class AudioManager : MonoBehaviour
     public string resourcesFolderSfx = "Audio/SFX";
 
     AudioSource[] bgm;
-    int bgmFront = 0; // ÇöÀç µé¸®´Â Ã¤³Î ÀÎµ¦½º
+    int bgmFront = 0; // í˜„ì¬ ë“¤ë¦¬ëŠ” ì±„ë„ ì¸ë±ìŠ¤
     float bgmFadeT, bgmFadeDur;
     bool bgmFading;
 
-    //¼¼ÅÍ
+    //ì„¸í„°
     float bgmMaster = 1f;
     float sfxMaster = 1f;
     float master = 1f, voiceMaster = 1f;
@@ -39,7 +59,7 @@ public sealed class AudioManager : MonoBehaviour
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
 
-        // BGM ¼Ò½º
+        // BGM ì†ŒìŠ¤
         bgm = new AudioSource[Mathf.Max(2, bgmChannels)];
         for (int i = 0; i < bgm.Length; i++)
         {
@@ -48,10 +68,10 @@ public sealed class AudioManager : MonoBehaviour
             a.volume = 0f;
             bgm[i] = a;
         }
-        //ÃÖÃÊ Awake ½ÃÁ¡ÀÌ ·Îºñ¾À¿¡¼­ÀÌ¹Ç·Î, ¿©±â¼­ ·Îºñ¾À ºê±İ ÄÑ±â
+        //ìµœì´ˆ Awake ì‹œì ì´ ë¡œë¹„ì”¬ì—ì„œì´ë¯€ë¡œ, ì—¬ê¸°ì„œ ë¡œë¹„ì”¬ ë¸Œê¸ˆ ì¼œê¸°
         SetLobbyBgm();
 
-        // SFX Ç®
+        // SFX í’€
         sfx = new AudioSource[Mathf.Max(1, sfxVoices)];
         for (int i = 0; i < sfx.Length; i++)
         {
@@ -93,7 +113,7 @@ public sealed class AudioManager : MonoBehaviour
             return;
         }
 
-        // Resources Æú¹é
+        // Resources í´ë°±
         var res = string.IsNullOrEmpty(resourcesFolderBgm) ? key : (resourcesFolderBgm + "/" + key);
         clip = Resources.Load<AudioClip>(res);
         CrossfadeTo(clip, 1f, fade < 0 ? bgmDefaultFade : fade);
@@ -118,15 +138,15 @@ public sealed class AudioManager : MonoBehaviour
         bgm[back].volume = 0f;
         bgm[back].Play();
         bgm[back].loop = true;
-        // Å¸±ê º¼·ıÀº clip ³»Àå º¼·ıÀÌ ¾Æ´Ï¶ó AudioSource¿¡ ¼³Á¤ÇÏ´Â ¸ğµ¨ÀÌ¸é ¾Æ·¡ ¶óÀÎÀ¸·Î ±³Ã¼ °¡´É
-        // ¿©±â¼­´Â °£´ÜÈ÷ 1.0À¸·Î µÎ°í, Æú´õº° ¹Í½ÌÀº Bank.volumeÀ¸·Î Á¶Àı
+        // íƒ€ê¹ƒ ë³¼ë¥¨ì€ clip ë‚´ì¥ ë³¼ë¥¨ì´ ì•„ë‹ˆë¼ AudioSourceì— ì„¤ì •í•˜ëŠ” ëª¨ë¸ì´ë©´ ì•„ë˜ ë¼ì¸ìœ¼ë¡œ êµì²´ ê°€ëŠ¥
+        // ì—¬ê¸°ì„œëŠ” ê°„ë‹¨íˆ 1.0ìœ¼ë¡œ ë‘ê³ , í´ë”ë³„ ë¯¹ì‹±ì€ Bank.volumeìœ¼ë¡œ ì¡°ì ˆ
         bgm[back].volume = 0f;
 
-        // ÆäÀÌµù ½ÃÀÛ
+        // í˜ì´ë”© ì‹œì‘
         bgmFadeT = 0f; bgmFadeDur = (fade < 0f ? bgmDefaultFade : fade); bgmFading = true;
 
-        // front´Â 1.0 ¡æ 0.0, backÀº 0.0 ¡æ 1.0À¸·Î
-        // ÃÖÁ¾ º¼·ıÀº Mixer¿¡¼­ °ü¸®ÇÏ´Â °ÍÀ» ±ÇÀå
+        // frontëŠ” 1.0 â†’ 0.0, backì€ 0.0 â†’ 1.0ìœ¼ë¡œ
+        // ìµœì¢… ë³¼ë¥¨ì€ Mixerì—ì„œ ê´€ë¦¬í•˜ëŠ” ê²ƒì„ ê¶Œì¥
     }
 
     // -------- SFX --------
@@ -139,7 +159,65 @@ public sealed class AudioManager : MonoBehaviour
             return;
         }
 
-        // Resources Æú¹é
+
+    // -------- Voice --------
+    public bool IsVoicePlaybackAvailable => voicePlaybackEnabled && voiceSource != null;
+
+    public void PlayVoice(string key, float volumeScale = 1f, bool restartIfSame = true)
+    {
+        if (!voicePlaybackEnabled || string.IsNullOrEmpty(key) || voiceSource == null) return;
+
+        if (!restartIfSame && voiceSource.isPlaying && string.Equals(currentVoiceKey, key, StringComparison.Ordinal))
+            return;
+
+        AudioClip clip = null;
+        float baseVolume = voiceDefaultVolume;
+        if (voiceBank != null && voiceBank.TryGet(key, out clip, out var bankVolume))
+        {
+            baseVolume = bankVolume;
+        }
+        else
+        {
+            string resKey = string.IsNullOrEmpty(resourcesFolderVoice) ? key : ($"{resourcesFolderVoice}/{key}");
+            clip = Resources.Load<AudioClip>(resKey);
+            baseVolume = voiceDefaultVolume;
+        }
+
+        if (clip == null) return;
+
+        currentVoiceKey = key;
+        currentVoiceBaseVolume = Mathf.Clamp01((baseVolume <= 0f ? voiceDefaultVolume : baseVolume) * volumeScale);
+        voiceSource.Stop();
+        voiceSource.clip = clip;
+        UpdateVoiceVolume();
+        voiceSource.Play();
+    }
+
+    public void StopVoice()
+    {
+        if (voiceSource == null) return;
+        voiceSource.Stop();
+        voiceSource.clip = null;
+        currentVoiceKey = null;
+        currentVoiceBaseVolume = 0f;
+    }
+
+    void UpdateVoiceVolume()
+    {
+        if (voiceSource == null) return;
+        voiceSource.volume = Mathf.Clamp01(currentVoiceBaseVolume * voiceMaster * master);
+    }
+        UpdateVoiceVolume();
+        if (!voicePlaybackEnabled && voiceSource != null && voiceSource.isPlaying)
+            StopVoice();
+    }
+    public void SetVoiceMasterVolume(float v)
+    {
+        voiceMaster = Mathf.Clamp01(v);
+        UpdateVoiceVolume();
+        if (!voicePlaybackEnabled && voiceSource != null && voiceSource.isPlaying)
+            StopVoice();
+
         var res = string.IsNullOrEmpty(resourcesFolderSfx) ? key : (resourcesFolderSfx + "/" + key);
         clip = Resources.Load<AudioClip>(res);
         PlaySfxInternal(clip, volumeScale);
@@ -154,12 +232,12 @@ public sealed class AudioManager : MonoBehaviour
         a.volume = Mathf.Clamp01(volume * sfxDefaultVolume * sfxMaster);
         a.PlayOneShot(clip, a.volume);
     }
-    //¸Å´ÏÀú ¼¼ÆÃ °ü·Ã ÇÔ¼ö
+    //ë§¤ë‹ˆì € ì„¸íŒ… ê´€ë ¨ í•¨ìˆ˜
     public void SetBgmMasterVolume(float v)
     {
         bgmMaster = Mathf.Clamp01(v);
 
-        // Áï½Ã ¹İ¿µ (ÆäÀÌµå ÁßÀÌ ¾Æ´Ï¾îµµ ÇöÀç Ã¤³Î¿¡ °öÇØÁÖ±â)
+        // ì¦‰ì‹œ ë°˜ì˜ (í˜ì´ë“œ ì¤‘ì´ ì•„ë‹ˆì–´ë„ í˜„ì¬ ì±„ë„ì— ê³±í•´ì£¼ê¸°)
         if (bgm != null)
         {
             for (int i = 0; i < bgm.Length; i++)
@@ -180,13 +258,13 @@ public sealed class AudioManager : MonoBehaviour
     public void SetMasterVolume(float v)
     {
         master = Mathf.Clamp01(v);
-        // BGM ÆäÀÌ´õ/Çö º¼·ı¿¡ ¸ğµÎ master °öÇØ ¹İ¿µ
+        // BGM í˜ì´ë”/í˜„ ë³¼ë¥¨ì— ëª¨ë‘ master ê³±í•´ ë°˜ì˜
         if (bgm != null)
         {
             for (int i = 0; i < bgm.Length; i++)
             {
                 if (!bgm[i]) continue;
-                float baseVol = (i == bgmFront ? 1f : 0f); // ±³Â÷ÆäÀÌµå ³»ºÎ ·ÎÁ÷ À¯Áö
+                float baseVol = (i == bgmFront ? 1f : 0f); // êµì°¨í˜ì´ë“œ ë‚´ë¶€ ë¡œì§ ìœ ì§€
                 bgm[i].volume = baseVol * bgmMaster * master;
             }
         }

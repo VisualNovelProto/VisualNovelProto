@@ -1,20 +1,27 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 public sealed class LogViewerList : MonoBehaviour
 {
     [Header("UI")]
-    public GameObject panel;            // ÀüÃ¼ ÆĞ³Î on/off
+    [Header("Voice Preview (Optional)")]
+    public bool enableVoiceButton = true;
+    public bool stopVoiceOnClose = true;
+
+        if (stopVoiceOnClose && AudioManager.Instance != null)
+            AudioManager.Instance.StopVoice();
+    public GameObject panel;            // ì „ì²´ íŒ¨ë„ on/off
     public ScrollRect scrollRect;       // Vertical only
-    public Slider slider;               // ¿· ½½¶óÀÌ´õ
-    public RectTransform content;       // ScrollRectÀÇ Content
-    public LogItemView itemPrefab;      // ÇÁ¸®ÆÕ
+    public Slider slider;               // ì˜† ìŠ¬ë¼ì´ë”
+    public RectTransform content;       // ScrollRectì˜ Content
+    public LogItemView itemPrefab;      // í”„ë¦¬íŒ¹
 
     [Header("Options")]
-    public int windowSize = 50;         // È­¸é¿¡ º¸ÀÏ ¶óÀÎ ¼ö
-    public bool showNodeId = false;     // [123] Ç¥½Ã
-    public bool newestAtBottom = true;  // ÃÖ½Å ·Î±×¸¦ ¾Æ·¡¿¡ ¹èÄ¡
-    public float itemSpacing = 12f;     // VerticalLayoutGroup¿Í ÀÏÄ¡½ÃÅ°±â
+    public int windowSize = 50;         // í™”ë©´ì— ë³´ì¼ ë¼ì¸ ìˆ˜
+    public bool showNodeId = false;     // [123] í‘œì‹œ
+    public bool newestAtBottom = true;  // ìµœì‹  ë¡œê·¸ë¥¼ ì•„ë˜ì— ë°°ì¹˜
+    public float itemSpacing = 12f;     // VerticalLayoutGroupì™€ ì¼ì¹˜ì‹œí‚¤ê¸°
 
     LogItemView[] pool;
     int lastLogCount = -1;
@@ -25,7 +32,7 @@ public sealed class LogViewerList : MonoBehaviour
         if (panel) panel.SetActive(false);
         if (!content) content = scrollRect ? scrollRect.content : null;
 
-        // Ç® ¹Ì¸® »ı¼º
+        // í’€ ë¯¸ë¦¬ ìƒì„±
         int n = Mathf.Max(8, windowSize);
         pool = new LogItemView[n];
         for (int i = 0; i < n; i++)
@@ -35,7 +42,7 @@ public sealed class LogViewerList : MonoBehaviour
             pool[i] = v;
         }
 
-        // ÀÌº¥Æ® ¿¬°á
+        // ì´ë²¤íŠ¸ ì—°ê²°
         if (slider)
         {
             slider.minValue = 0f; slider.maxValue = 1f; slider.wholeNumbers = false;
@@ -49,7 +56,7 @@ public sealed class LogViewerList : MonoBehaviour
         panel.SetActive(true);
         UiModalGate.Push(Close);
         Rebuild();
-        // Ã¹ Å¬¸¯ ÀÜ»ó ¹æÁö
+        // ì²« í´ë¦­ ì”ìƒ ë°©ì§€
         InputRouter.Instance?.SuppressAdvance(0.05f);
     }
 
@@ -57,19 +64,19 @@ public sealed class LogViewerList : MonoBehaviour
     {
         panel.SetActive(false);
         UiModalGate.Pop();
-        // ¼±ÅÃ ÃÊ±âÈ­(Æ÷Ä¿½º ÀÜ»ó Á¦°Å)
+        // ì„ íƒ ì´ˆê¸°í™”(í¬ì»¤ìŠ¤ ì”ìƒ ì œê±°)
         if (UnityEngine.EventSystems.EventSystem.current)
             UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
-        // (¼±ÅÃ) CanvasGroupÀ» ½è´Ù¸é ¹İµå½Ã blocksRaycasts=false·Î º¹±Í
+        // (ì„ íƒ) CanvasGroupì„ ì¼ë‹¤ë©´ ë°˜ë“œì‹œ blocksRaycasts=falseë¡œ ë³µê·€
         var cg = panel.GetComponent<CanvasGroup>();
         if (cg) cg.blocksRaycasts = false;
-        // Ã¹ Å¬¸¯ ÀÜ»ó ¹æÁö
+        // ì²« í´ë¦­ ì”ìƒ ë°©ì§€
         InputRouter.Instance?.SuppressAdvance(0.05f);
     }
 
     void Update()
     {
-        // ·Î±×°¡ »õ·Î »ı°åÀ¸¸é ÀÚµ¿ °»½Å(½½¶óÀÌ´õ°¡ ÃÖ½ÅÂÊ¿¡ °¡±î¿ì¸é ¹ØÀ¸·Î À¯Áö)
+        // ë¡œê·¸ê°€ ìƒˆë¡œ ìƒê²¼ìœ¼ë©´ ìë™ ê°±ì‹ (ìŠ¬ë¼ì´ë”ê°€ ìµœì‹ ìª½ì— ê°€ê¹Œìš°ë©´ ë°‘ìœ¼ë¡œ ìœ ì§€)
         var lm = ChatLogManager.Instance;
         if (lm == null) return;
         if (lm.Count != lastLogCount)
@@ -88,8 +95,8 @@ public sealed class LogViewerList : MonoBehaviour
         lastLogCount = lm ? lm.Count : 0;
         if (!slider) return;
 
-        // °ª À¯Áö: ÀüÃ¼ ±æÀÌ°¡ ¹Ù²î¾îµµ ÇöÀç »ó´ë À§Ä¡´Â À¯Áö
-        // (¿©±â¼± 0=ÃÖ½Å,1=¿À·¡µÈÀ¸·Î Á¤ÀÇ)
+        // ê°’ ìœ ì§€: ì „ì²´ ê¸¸ì´ê°€ ë°”ë€Œì–´ë„ í˜„ì¬ ìƒëŒ€ ìœ„ì¹˜ëŠ” ìœ ì§€
+        // (ì—¬ê¸°ì„  0=ìµœì‹ ,1=ì˜¤ë˜ëœìœ¼ë¡œ ì •ì˜)
         slider.SetValueWithoutNotify(slider.value);
     }
 
@@ -97,7 +104,7 @@ public sealed class LogViewerList : MonoBehaviour
     {
         if (syncing) return;
         Rebuild();
-        // ½½¶óÀÌ´õ ¡æ ½ºÅ©·ÑRect µ¿±âÈ­(´ë·«)
+        // ìŠ¬ë¼ì´ë” â†’ ìŠ¤í¬ë¡¤Rect ë™ê¸°í™”(ëŒ€ëµ)
         syncing = true;
         if (scrollRect) scrollRect.verticalNormalizedPosition = newestAtBottom ? (1f - value) : value;
         syncing = false;
@@ -106,7 +113,7 @@ public sealed class LogViewerList : MonoBehaviour
     void OnScrollChanged(Vector2 _)
     {
         if (syncing || !scrollRect || !slider) return;
-        // ½ºÅ©·Ñ ¡æ ½½¶óÀÌ´õ
+        // ìŠ¤í¬ë¡¤ â†’ ìŠ¬ë¼ì´ë”
         syncing = true;
         float v = scrollRect.verticalNormalizedPosition;
         slider.SetValueWithoutNotify(newestAtBottom ? (1f - v) : v);
@@ -129,7 +136,7 @@ public sealed class LogViewerList : MonoBehaviour
         if (slider) slider.SetValueWithoutNotify(newestAtBottom ? 1f : 0f);
     }
 
-    // --- ÇÙ½É: ÇöÀç ½½¶óÀÌ´õ °ª ±âÁØÀ¸·Î "À©µµ¿ì"¸¦ °è»êÇØ Ç®¿¡ ¹ÙÀÎµù ---
+    // --- í•µì‹¬: í˜„ì¬ ìŠ¬ë¼ì´ë” ê°’ ê¸°ì¤€ìœ¼ë¡œ "ìœˆë„ìš°"ë¥¼ ê³„ì‚°í•´ í’€ì— ë°”ì¸ë”© ---
     void Rebuild()
     {
         var lm = ChatLogManager.Instance;
@@ -139,22 +146,46 @@ public sealed class LogViewerList : MonoBehaviour
         int win = Mathf.Min(windowSize, total);
         if (win <= 0) { ClearPool(); return; }
 
-        // ½½¶óÀÌ´õ 0=ÃÖ½Å, 1=¿À·¡µÈ
-        float t = slider ? slider.value : 0f;
-        int firstIndexFromOldest; // ¿À·¡µÈ ±âÁØ ½ÃÀÛ ÀÎµ¦½º(0 = °¡Àå ¿À·¡µÈ)
+                bool showVoice = ShouldShowVoiceButton(e);
+                Action onVoice = null;
+                if (showVoice)
+                {
+                    string voiceKey = e.voiceKey;
+                    onVoice = () => PreviewVoice(voiceKey);
+                }
+                pool[i].Bind(e, showNodeId, zebra++, showVoice, onVoice);
 
-        // ÀüÃ¼(total) Áß win°³¸¦ º¸¿©ÁÙ °ÍÀÌ¹Ç·Î ½ºÅ©·Ñ °¡´ÉÇÑ ¹üÀ§´Â (total - win)
+    bool ShouldShowVoiceButton(ChatLogManager.LogEntry entry)
+    {
+        if (!enableVoiceButton) return false;
+        if (string.IsNullOrEmpty(entry.voiceKey)) return false;
+        var audio = AudioManager.Instance;
+        if (audio == null || !audio.IsVoicePlaybackAvailable) return false;
+        return true;
+    }
+
+    void PreviewVoice(string voiceKey)
+    {
+        if (string.IsNullOrEmpty(voiceKey)) return;
+        var audio = AudioManager.Instance;
+        if (audio == null) return;
+        audio.PlayVoice(voiceKey);
+    }
+        float t = slider ? slider.value : 0f;
+        int firstIndexFromOldest; // ì˜¤ë˜ëœ ê¸°ì¤€ ì‹œì‘ ì¸ë±ìŠ¤(0 = ê°€ì¥ ì˜¤ë˜ëœ)
+
+        // ì „ì²´(total) ì¤‘ winê°œë¥¼ ë³´ì—¬ì¤„ ê²ƒì´ë¯€ë¡œ ìŠ¤í¬ë¡¤ ê°€ëŠ¥í•œ ë²”ìœ„ëŠ” (total - win)
         int scrollRange = Mathf.Max(0, total - win);
-        int offset = Mathf.RoundToInt(t * scrollRange); // ¿À·¡µÈ ÂÊÀ¸·Î offset
-        firstIndexFromOldest = (total - win) - offset;  // ÃÖ½Å ±âÁØÀ» ¾Æ·¡·Î º¸³¾¼ö·Ï first°¡ Ä¿Áü
+        int offset = Mathf.RoundToInt(t * scrollRange); // ì˜¤ë˜ëœ ìª½ìœ¼ë¡œ offset
+        firstIndexFromOldest = (total - win) - offset;  // ìµœì‹  ê¸°ì¤€ì„ ì•„ë˜ë¡œ ë³´ë‚¼ìˆ˜ë¡ firstê°€ ì»¤ì§
         firstIndexFromOldest = Mathf.Clamp(firstIndexFromOldest, 0, Mathf.Max(0, total - win));
 
-        // outBuf ¾øÀÌ ¹Ù·Î ÇÑ ÁÙ¾¿ ¿äÃ»ÇÏ·Á¸é ChatLogManager¿¡ ÀÎµ¦½º Á¢±ÙÀÚ¸¦ Ãß°¡ÇØµµ ÁÁÀ½.
-        // ¿©±â¼­´Â CopyLatest¸¦ µÎ ¹ø È°¿ëÇÏ´Â °£´ÜÇÑ ¹æ½Ä:
-        // 1) ÀüÃ¼ latest=total ¸¦ tmp¿¡ º¹»ç ¡æ 2) °Å±â¼­ ½½¶óÀÌ½Ì
-        // (¼º´É ÃæºĞ. total<=capacity(¿¹:256) ¼öÁØ)
+        // outBuf ì—†ì´ ë°”ë¡œ í•œ ì¤„ì”© ìš”ì²­í•˜ë ¤ë©´ ChatLogManagerì— ì¸ë±ìŠ¤ ì ‘ê·¼ìë¥¼ ì¶”ê°€í•´ë„ ì¢‹ìŒ.
+        // ì—¬ê¸°ì„œëŠ” CopyLatestë¥¼ ë‘ ë²ˆ í™œìš©í•˜ëŠ” ê°„ë‹¨í•œ ë°©ì‹:
+        // 1) ì „ì²´ latest=total ë¥¼ tmpì— ë³µì‚¬ â†’ 2) ê±°ê¸°ì„œ ìŠ¬ë¼ì´ì‹±
+        // (ì„±ëŠ¥ ì¶©ë¶„. total<=capacity(ì˜ˆ:256) ìˆ˜ì¤€)
         var tmp = new ChatLogManager.LogEntry[total];
-        int nTot = lm.CopyLatest(tmp, total); // ¿À·¡µÈ¡æÃÖ½Å ¼ø¼­
+        int nTot = lm.CopyLatest(tmp, total); // ì˜¤ë˜ëœâ†’ìµœì‹  ìˆœì„œ
 
         int zebra = 0;
         for (int i = 0; i < pool.Length; i++)
@@ -173,8 +204,8 @@ public sealed class LogViewerList : MonoBehaviour
             }
         }
 
-        // Content ³ôÀÌ º¸Á¤(VerticalLayoutGroup + ContentSizeFitter ¾²¸é ÀÚµ¿)
-        // ¿©±â¼± ·¹ÀÌ¾Æ¿ô ÄÄÆ÷³ÍÆ® »ç¿ëÀ» ±ÇÀå.
+        // Content ë†’ì´ ë³´ì •(VerticalLayoutGroup + ContentSizeFitter ì“°ë©´ ìë™)
+        // ì—¬ê¸°ì„  ë ˆì´ì•„ì›ƒ ì»´í¬ë„ŒíŠ¸ ì‚¬ìš©ì„ ê¶Œì¥.
     }
 
     void ClearPool()
