@@ -417,7 +417,7 @@ public sealed class DialogueUI : MonoBehaviour
 
         SetBodyTextForTyping(shown);   //원문(node.text)로 덮어쓰지 않음
         //로그 입력
-        StartCoroutine(CoPushLog(node, speakerText != null ? speakerText.text : speakerValue, bodyValue));
+        StartCoroutine(CoPushLog(node, speakerText != null ? speakerText.text : speakerValue, bodyValue, node.voice));
         //if (ChatLogManager.Instance != null)
         //{
         //    int nid = node.nodeId;
@@ -448,6 +448,8 @@ public sealed class DialogueUI : MonoBehaviour
 
         if (!string.IsNullOrEmpty(node.sfx) && AudioManager.Instance != null)
             AudioManager.Instance.PlaySfx(node.sfx);
+
+        HandleVoicePlayback(node.voice);
 
         HideAllChoices();
         ShowContinueHint(true);
@@ -917,10 +919,27 @@ public sealed class DialogueUI : MonoBehaviour
         return x * x * (3f - 2f * x);
     }
 
-    IEnumerator CoPushLog(DialogueNode node, string displaySpeaker, string displayBody)
+    void HandleVoicePlayback(string voiceKey)
+    {
+        var audio = AudioManager.Instance;
+        if (audio == null) return;
+        if (!audio.IsVoicePlaybackAvailable)
+        {
+            audio.StopVoice();
+            return;
+        }
+        if (string.IsNullOrEmpty(voiceKey))
+        {
+            audio.StopVoice();
+            return;
+        }
+        audio.PlayVoice(voiceKey);
+    }
+
+    IEnumerator CoPushLog(DialogueNode node, string displaySpeaker, string displayBody, string voiceKey)
     {
         yield return null;
-        ChatLogManager.Instance?.Push(node.nodeId, displaySpeaker, displayBody);
+        ChatLogManager.Instance?.Push(node.nodeId, displaySpeaker, displayBody, voiceKey);
     }
 
     void UpdateActors(string spec)

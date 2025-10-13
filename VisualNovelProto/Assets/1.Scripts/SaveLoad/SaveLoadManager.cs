@@ -63,6 +63,7 @@ public sealed class SaveLoadManager : MonoBehaviour
         public int nodeId;          // 선택(언어 바뀌면 재생성용)
         public string speaker;      // 화면에 보인 최종 문자열(링크/색상 포함 OK)
         public string body;         // 화면에 보인 최종 문자열
+        public string voice;        // 재생된 음성 키
     }
 
     // --- 저장 데이터 포맷 ---
@@ -290,7 +291,7 @@ public sealed class SaveLoadManager : MonoBehaviour
         // 4) 메타
         var data = new SaveData
         {
-            version = 2,
+            version = 3,
             timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             sceneName = SceneManager.GetActiveScene().name,
             nodeId = nodeId,
@@ -322,7 +323,8 @@ public sealed class SaveLoadManager : MonoBehaviour
                         {
                             nodeId = _tmpLogBuf[i].nodeId,
                             speaker = _tmpLogBuf[i].speaker,
-                            body = _tmpLogBuf[i].bodyRich
+                            body = _tmpLogBuf[i].bodyRich,
+                            voice = _tmpLogBuf[i].voiceKey
                         };
                     }
                 }
@@ -430,7 +432,7 @@ public sealed class SaveLoadManager : MonoBehaviour
                     for (int i = 0; i < end; i++)
                     {
                         var l = data.logTail[i];
-                        lm.Push(l.nodeId, l.speaker, l.body);
+                        lm.Push(l.nodeId, l.speaker, l.body, l.voice);
                     }
                 }
             }

@@ -9,16 +9,18 @@ public sealed class ChatLogManager : MonoBehaviour
     {
         public int nodeId;
         public string speaker;
-        public string bodyRich; // ¸µÅ©/»ö Æ÷ÇÔ ¸®Ä¡ ÅØ½ºÆ®
+        public string voiceKey;
+    public void Push(int nodeId, string speaker, string bodyRich, string voiceKey = null)
+        buf[i].voiceKey = string.IsNullOrEmpty(voiceKey) ? string.Empty : voiceKey;
     }
 
     [Header("Capacity")]
-    public int capacity = 256;          // ¿øÇü ¹öÆÛ Å©±â
-    public int defaultExportCount = 50; // ºä¾î ±âº» Ç¥½Ã ¶óÀÎ ¼ö
+    public int capacity = 256;          // ì›í˜• ë²„í¼ í¬ê¸°
+    public int defaultExportCount = 50; // ë·°ì–´ ê¸°ë³¸ í‘œì‹œ ë¼ì¸ ìˆ˜
 
     LogEntry[] buf;
-    int head;   // ´ÙÀ½ ¾²±â À§Ä¡
-    int count;  // ´©Àû ¼ö(<= capacity)
+    int head;   // ë‹¤ìŒ ì“°ê¸° ìœ„ì¹˜
+    int count;  // ëˆ„ì  ìˆ˜(<= capacity)
 
     void Awake()
     {
@@ -30,7 +32,7 @@ public sealed class ChatLogManager : MonoBehaviour
     }
     void OnDestroy()
     {
-        // ¡Ú ÆÄ±«µÉ ¶§ ½Ì±ÛÅÏ ÇØÁ¦
+        // â˜… íŒŒê´´ë  ë•Œ ì‹±ê¸€í„´ í•´ì œ
         if (Instance == this) Instance = null;
     }
 
@@ -47,7 +49,7 @@ public sealed class ChatLogManager : MonoBehaviour
         if (count < capacity) count++;
     }
 
-    /// <summary>ÃÖ±Ù n°³¸¦ outBuf¿¡ ¾Õ¿¡¼­ºÎÅÍ(¿À·¡µÈ ¡æ ÃÖ½Å) Ã¤¿ö ¹İÈ¯. ½ÇÁ¦ Ã¤¿î ¼ö ¸®ÅÏ.</summary>
+    /// <summary>ìµœê·¼ nê°œë¥¼ outBufì— ì•ì—ì„œë¶€í„°(ì˜¤ë˜ëœ â†’ ìµœì‹ ) ì±„ì›Œ ë°˜í™˜. ì‹¤ì œ ì±„ìš´ ìˆ˜ ë¦¬í„´.</summary>
     public int CopyLatest(LogEntry[] outBuf, int n)
     {
         if (outBuf == null || outBuf.Length == 0 || n <= 0) return 0;
