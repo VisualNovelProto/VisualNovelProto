@@ -20,6 +20,7 @@ public sealed class DialogueDatabase : ScriptableObject
     [NonSerialized] public int[] nodeIndexById = CreateIndex();
     static int[] CreateIndex() { var a = new int[MaxNodes]; for (int i = 0; i < a.Length; i++) a[i] = -1; return a; }
 
+    public const string CsvHeaderLegacy =
         "Index,nodeId,rowType,speaker,text,voice,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq";
     public const string CsvHeaderNew =
         "Index,nodeId,rowType,speaker,text,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq";
@@ -40,13 +41,14 @@ public sealed class DialogueDatabase : ScriptableObject
         {
             string line = sr.ReadLine(); // header
             if (line == null) throw new Exception("CSV empty");
+            bool headerHasVoice = HeaderHasVoiceColumn(line);
 
             int lineNo = 1;
             while ((line = sr.ReadLine()) != null)
             {
                 lineNo++;
                 if (string.IsNullOrWhiteSpace(line)) continue;
-                ParseCsvLine(line, out CsvFields f);
+                ParseCsvLine(line, headerHasVoice, out CsvFields f);
 
                 if (string.Equals(f.rowType, "Choice", StringComparison.OrdinalIgnoreCase))
                 {
@@ -182,22 +184,25 @@ public sealed class DialogueDatabase : ScriptableObject
         return new ReadOnlySpan<Choice>(choicesPool, node.choiceOffset, node.choiceCount);
     }
 
-        public string speaker, text, voice, actors, bgm, sfx, cg, transition, advancePolicy, nextNodeIdText;
+    static bool HeaderHasVoiceColumn(string headerLine)
+    {
+        if (string.IsNullOrWhiteSpace(headerLine)) return true;
 
-        string[] slots = new string[18];
-            voice = slots[5],
-            actors = slots[6],
-            bgm = slots[7],
-            sfx = slots[8],
-            cg = slots[9],
-            transition = slots[10],
-            advancePolicy = slots[11],
-            nextNodeIdText = slots[12],
-            choiceLabel = slots[13],
-            choiceGoto = slots[14],
-            choiceSet = slots[15],
-            flagsSet = slots[16],
-            flagsReq = slots[17],
+        string trimmed = headerLine.Trim();
+        if (string.Equals(trimmed, CsvHeaderLegacy, StringComparison.OrdinalIgnoreCase)) return true;
+        if (string.Equals(trimmed, CsvHeaderNew, StringComparison.OrdinalIgnoreCase)) return false;
+        if (trimmed.IndexOf(",voice", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+        int columnCount = CountCsvColumns(trimmed);
+        if (columnCount == 18) return true;
+        if (columnCount == 17) return false;
+
+        throw new Exception($"Unexpected CSV header format: {headerLine}");
+    }
+
+    static void ParseCsvLine(string line, bool headerHasVoice, out CsvFields f)
+    {
+        string[] slots = new string[headerHasVoice ? 18 : 17];
         int si = 0;
         var sb = new StringBuilder(256);
         bool inQuote = false;
@@ -216,7 +221,13 @@ public sealed class DialogueDatabase : ScriptableObject
             }
             else
             {
-                if (c == ',') { slots[si++] = sb.ToString(); sb.Length = 0; if (si >= slots.Length) break; }
+                if (c == ',')
+                {
+                    if (si < slots.Length) slots[si] = sb.ToString();
+                    si++;
+                    sb.Length = 0;
+                    if (si >= slots.Length) break;
+                }
                 else if (c == '"') inQuote = true;
                 else sb.Append(c);
             }
@@ -225,25 +236,73 @@ public sealed class DialogueDatabase : ScriptableObject
 
         f = new CsvFields
         {
-            indexKey = slots[0],
-            nodeIdText = slots[1],
-            rowType = slots[2],
-            speaker = slots[3],
-            text = slots[4],
-            actors = slots[5],
-            bgm = slots[6],
-            sfx = slots[7],
-            cg = slots[8],
-            transition = slots[9],
-            advancePolicy = slots[10],
-            nextNodeIdText = slots[11],
-            choiceLabel = slots[12],
-            choiceGoto = slots[13],
-            choiceSet = slots[14],
-            flagsSet = slots[15],
-            flagsReq = slots[16],
-            choices = null
+            indexKey = SlotOrDefault(slots, 0),
+            nodeIdText = SlotOrDefault(slots, 1),
+            rowType = SlotOrDefault(slots, 2),
+            speaker = SlotOrDefault(slots, 3),
+            text = SlotOrDefault(slots, 4),
+            voice = headerHasVoice ? SlotOrDefault(slots, 5) : null,
+            actors = SlotOrDefault(slots, headerHasVoice ? 6 : 5),
+            bgm = SlotOrDefault(slots, headerHasVoice ? 7 : 6),
+            sfx = SlotOrDefault(slots, headerHasVoice ? 8 : 7),
+            cg = SlotOrDefault(slots, headerHasVoice ? 9 : 8),
+            transition = SlotOrDefault(slots, headerHasVoice ? 10 : 9),
+            advancePolicy = SlotOrDefault(slots, headerHasVoice ? 11 : 10),
+            nextNodeIdText = SlotOrDefault(slots, headerHasVoice ? 12 : 11),
+            choiceLabel = SlotOrDefault(slots, headerHasVoice ? 13 : 12),
+            choiceGoto = SlotOrDefault(slots, headerHasVoice ? 14 : 13),
+            choiceSet = SlotOrDefault(slots, headerHasVoice ? 15 : 14),
+            flagsSet = SlotOrDefault(slots, headerHasVoice ? 16 : 15),
+            flagsReq = SlotOrDefault(slots, headerHasVoice ? 17 : 16),
         };
+    }
+
+    static int CountCsvColumns(string line)
+    {
+        if (string.IsNullOrEmpty(line)) return 0;
+
+        int count = 1;
+        bool inQuote = false;
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+            if (c == '"')
+            {
+                if (inQuote && i + 1 < line.Length && line[i + 1] == '"') i++;
+                else inQuote = !inQuote;
+            }
+            else if (c == ',' && !inQuote)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    static string SlotOrDefault(string[] slots, int index)
+        => (index >= 0 && index < slots.Length) ? slots[index] : null;
+
+    struct CsvFields
+    {
+        public string indexKey;
+        public string nodeIdText;
+        public string rowType;
+        public string speaker;
+        public string text;
+        public string voice;
+        public string actors;
+        public string bgm;
+        public string sfx;
+        public string cg;
+        public string transition;
+        public string advancePolicy;
+        public string nextNodeIdText;
+        public string choiceLabel;
+        public string choiceGoto;
+        public string choiceSet;
+        public string flagsSet;
+        public string flagsReq;
     }
 
     static int ParseParentId(string nodeIdText)
