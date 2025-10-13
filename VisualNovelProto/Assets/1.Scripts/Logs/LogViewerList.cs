@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,11 +21,15 @@ public sealed class LogViewerList : MonoBehaviour
     public bool showNodeId = false;
     public bool newestAtBottom = true;
 
+    [Header("Animation (Optional)")]
+    public PanelAnimator animator;
+
     LogItemView[] pool;
     ChatLogManager.LogEntry[] temp;
     bool syncingScroll;
     bool opened;
     int lastKnownCount = -1;
+    Coroutine closeRoutine;
 
     public bool IsOpen => panel != null && panel.activeInHierarchy;
 
@@ -38,6 +43,9 @@ public sealed class LogViewerList : MonoBehaviour
 
         AllocatePool();
         HookEvents();
+
+        if (!animator && panel)
+            animator = panel.GetComponent<PanelAnimator>();
     }
 
     void AllocatePool()
@@ -81,19 +89,30 @@ public sealed class LogViewerList : MonoBehaviour
         if (!panel)
             return;
 
+        if (closeRoutine != null)
+        {
+            StopCoroutine(closeRoutine);
+            closeRoutine = null;
+        }
+
+        if (!panel.activeSelf)
+            panel.SetActive(true);
+
         if (!opened)
         {
             UiModalGate.Push(Close);
             opened = true;
         }
 
-        panel.SetActive(true);
         SyncSliderRange();
         Rebuild();
         if (newestAtBottom)
             SnapToLatest();
         else
             SnapToOldest();
+
+        EnsureAnimator();
+        animator?.PlayOpen(panel);
 
         InputRouter.Instance?.SuppressAdvance(0.05f);
     }
@@ -106,18 +125,21 @@ public sealed class LogViewerList : MonoBehaviour
         if (stopVoiceOnClose)
             AudioManager.Instance?.StopVoice();
 
-        panel.SetActive(false);
-        if (opened)
+        if (closeRoutine != null)
         {
-            UiModalGate.Pop();
-            opened = false;
+            StopCoroutine(closeRoutine);
+            closeRoutine = null;
         }
 
-        var es = UnityEngine.EventSystems.EventSystem.current;
-        if (es != null)
-            es.SetSelectedGameObject(null);
-
-        InputRouter.Instance?.SuppressAdvance(0.05f);
+        EnsureAnimator();
+        if (animator != null && panel.activeInHierarchy)
+        {
+            closeRoutine = StartCoroutine(CoClose());
+        }
+        else
+        {
+            FinishClose();
+        }
     }
 
     void Update()
@@ -314,6 +336,38 @@ public sealed class LogViewerList : MonoBehaviour
             if (pool[i] && pool[i].gameObject.activeSelf)
                 pool[i].gameObject.SetActive(false);
         }
+    }
+
+    IEnumerator CoClose()
+    {
+        yield return animator.PlayClose(panel);
+        FinishClose();
+    }
+
+    void FinishClose()
+    {
+        closeRoutine = null;
+
+        if (panel)
+            panel.SetActive(false);
+
+        if (opened)
+        {
+            UiModalGate.Pop();
+            opened = false;
+        }
+
+        var es = UnityEngine.EventSystems.EventSystem.current;
+        if (es != null)
+            es.SetSelectedGameObject(null);
+
+        InputRouter.Instance?.SuppressAdvance(0.05f);
+    }
+
+    void EnsureAnimator()
+    {
+        if (!animator && panel)
+            animator = panel.GetComponent<PanelAnimator>();
     }
 
     bool ShouldShowVoiceButton(in ChatLogManager.LogEntry entry)
