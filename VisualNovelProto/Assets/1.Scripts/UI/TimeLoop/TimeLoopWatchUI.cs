@@ -95,7 +95,7 @@ public sealed class TimeLoopWatchUI : MonoBehaviour
                 if (string.IsNullOrEmpty(branchName))
                     branchName = manager.CurrentBranch.description;
                 if (string.IsNullOrEmpty(branchName))
-                    branchName = manager.CurrentBranch.BuildRequirementSummary();
+                    branchName = manager.BuildRequirementSummary(manager.CurrentBranch);
                 currentBranchLabel.text = branchName;
             }
             else

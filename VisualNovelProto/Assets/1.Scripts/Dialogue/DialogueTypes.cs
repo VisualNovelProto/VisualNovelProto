@@ -28,6 +28,7 @@ public struct DialogueNode
     public string cg;
     public string transition;
     public string advancePolicy; //"block" | "fast" | "fastforward" | ""(±âº»)
+    public string loopKnowledge;
 
     public int nextNodeId;
 
