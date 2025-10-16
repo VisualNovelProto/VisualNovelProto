@@ -1,24 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
 
 public sealed class DialogueDatabase : ScriptableObject
 {
-    public const int MaxNodes = 100_000;
-    public const int MaxChoices = 300_000;
-    public const int MaxFlagRefs = 1_000_000;
-
-    [NonSerialized] public DialogueNode[] nodes = new DialogueNode[MaxNodes];
-    [NonSerialized] public Choice[] choicesPool = new Choice[MaxChoices];
-    [NonSerialized] public int[] flagsPool = new int[MaxFlagRefs];
+    [NonSerialized] public DialogueNode[] nodes = Array.Empty<DialogueNode>();
+    [NonSerialized] public Choice[] choicesPool = Array.Empty<Choice>();
+    [NonSerialized] public int[] flagsPool = Array.Empty<int>();
 
     [NonSerialized] public int nodeCount;
     [NonSerialized] public int choiceCount;
     [NonSerialized] public int flagRefCount;
 
-    [NonSerialized] public int[] nodeIndexById = CreateIndex();
-    static int[] CreateIndex() { var a = new int[MaxNodes]; for (int i = 0; i < a.Length; i++) a[i] = -1; return a; }
+    readonly Dictionary<int, int> _nodeIndexById = new Dictionary<int, int>();
+    readonly Dictionary<string, int> _indexKeyLookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
     public const string CsvHeaderLegacy =
         "Index,nodeId,rowType,speaker,text,voice,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq";
@@ -42,10 +39,17 @@ public sealed class DialogueDatabase : ScriptableObject
 
     public void LoadFromCsvText(string csvText)
     {
-        ResetPools();
+        ResetState();
+        if (string.IsNullOrWhiteSpace(csvText))
+            return;
+
+        var nodeList = new List<DialogueNode>(1024);
+        var choiceList = new List<Choice>(1024);
+        var flagList = new List<int>(1024);
+
         using (StringReader sr = new StringReader(csvText))
         {
-            string line = sr.ReadLine(); // header
+            string line = sr.ReadLine();
             if (line == null) throw new Exception("CSV empty");
             HeaderInfo headerInfo = AnalyzeHeader(line);
 
@@ -53,72 +57,89 @@ public sealed class DialogueDatabase : ScriptableObject
             while ((line = sr.ReadLine()) != null)
             {
                 lineNo++;
-                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
                 ParseCsvLine(line, headerInfo, out CsvFields f);
 
                 if (string.Equals(f.rowType, "Choice", StringComparison.OrdinalIgnoreCase))
                 {
                     int parentId = ParseParentId(f.nodeIdText);
-                    int gotoId = SafeAtoi(f.choiceGoto);
-                    if (string.IsNullOrWhiteSpace(f.choiceLabel)) continue;
+                    if (string.IsNullOrWhiteSpace(f.choiceLabel))
+                        continue;
 
-                    int parentIdx = nodeIdToIndex(parentId);
-                    if (parentIdx < 0) parentIdx = EnsureNodeShell(parentId);
-
-                    AddChoice(parentIdx, f.choiceLabel.Trim(), gotoId, f.choiceSet);
+                    int parentIdx = GetOrCreateNodeShell(nodeList, parentId);
+                    AddChoice(nodeList, choiceList, flagList, parentIdx, f.choiceLabel.Trim(), SafeAtoi(f.choiceGoto), f.choiceSet);
                     continue;
                 }
 
-                // Node
                 int nid = SafeAtoi(f.nodeIdText);
-                if (nid < 0 || nid >= MaxNodes)
-                    throw new Exception($"nodeId out of range at line {lineNo}: {f.nodeIdText}");
+                if (nid < 0)
+                    throw new Exception($"nodeId must be >= 0 at line {lineNo}: {f.nodeIdText}");
 
-                if (nodeIndexById[nid] != -1)
+                int index;
+                DialogueNode node;
+                if (_nodeIndexById.TryGetValue(nid, out index))
                 {
-                    int idx = nodeIndexById[nid];
-                    ref DialogueNode nodeX = ref nodes[idx];
-                    FillNode(ref nodeX, f);
+                    node = nodeList[index];
                 }
                 else
                 {
-                    if (nodeCount >= MaxNodes) throw new Exception("MaxNodes exceeded");
-                    ref DialogueNode node = ref nodes[nodeCount];
+                    index = nodeList.Count;
                     node = default;
                     node.nodeId = nid;
-                    node.indexKey = f.indexKey;
-                    FillNode(ref node, f);
-
-                    nodeIndexById[nid] = nodeCount;
-                    nodeCount++;
+                    nodeList.Add(node);
+                    _nodeIndexById[nid] = index;
                 }
+
+                FillNode(ref node, f, flagList);
+                nodeList[index] = node;
+
+                if (!string.IsNullOrEmpty(node.indexKey))
+                    _indexKeyLookup[node.indexKey] = node.nodeId;
             }
         }
+
+        nodes = nodeList.ToArray();
+        nodeCount = nodes.Length;
+
+        choicesPool = choiceList.ToArray();
+        choiceCount = choicesPool.Length;
+
+        flagsPool = flagList.ToArray();
+        flagRefCount = flagsPool.Length;
     }
 
-    void ResetPools()
+    void ResetState()
     {
+        nodes = Array.Empty<DialogueNode>();
+        choicesPool = Array.Empty<Choice>();
+        flagsPool = Array.Empty<int>();
         nodeCount = choiceCount = flagRefCount = 0;
-        for (int i = 0; i < nodeIndexById.Length; i++) nodeIndexById[i] = -1;
+        _nodeIndexById.Clear();
+        _indexKeyLookup.Clear();
     }
 
-    int nodeIdToIndex(int nodeId) => (nodeId >= 0 && nodeId < nodeIndexById.Length) ? nodeIndexById[nodeId] : -1;
-
-    int EnsureNodeShell(int nodeId)
+    int GetOrCreateNodeShell(List<DialogueNode> nodeList, int nodeId)
     {
-        int idx = nodeIdToIndex(nodeId);
-        if (idx >= 0) return idx;
-        if (nodeCount >= MaxNodes) throw new Exception("MaxNodes exceeded");
-        ref DialogueNode node = ref nodes[nodeCount];
-        node = default;
-        node.nodeId = nodeId;
-        node.indexKey = string.Empty;
-        node.nextNodeId = -1;
-        nodeIndexById[nodeId] = nodeCount;
-        return nodeCount++;
+        if (nodeId < 0)
+            throw new Exception($"Choice references invalid parent id: {nodeId}");
+
+        if (_nodeIndexById.TryGetValue(nodeId, out int existing))
+            return existing;
+
+        DialogueNode shell = default;
+        shell.nodeId = nodeId;
+        shell.indexKey = string.Empty;
+        shell.nextNodeId = -1;
+
+        int idx = nodeList.Count;
+        nodeList.Add(shell);
+        _nodeIndexById[nodeId] = idx;
+        return idx;
     }
 
-    void FillNode(ref DialogueNode node, CsvFields f)
+    void FillNode(ref DialogueNode node, CsvFields f, List<int> flagList)
     {
         node.indexKey = string.IsNullOrEmpty(f.indexKey) ? node.indexKey : f.indexKey;
         node.rowType = f.rowType;
@@ -129,7 +150,6 @@ public sealed class DialogueDatabase : ScriptableObject
         string spec = f.actors?.Trim();
         if (!string.IsNullOrEmpty(spec))
         {
-            // 구형(단일 키만) 자동 확장
             bool looksLikeLegacyKey = (spec.IndexOf('@') < 0) && (spec.IndexOf(';') < 0) && (spec.IndexOf(' ') < 0);
             node.actors = looksLikeLegacyKey ? $"{spec}@C(in=fade)" : spec;
         }
@@ -141,53 +161,58 @@ public sealed class DialogueDatabase : ScriptableObject
         node.bgm = f.bgm;
         node.sfx = f.sfx;
         node.cg = f.cg;
-        node.transition = f.transition; // transition 매핑
+        node.transition = f.transition;
         node.advancePolicy = f.advancePolicy;
         node.loopKnowledge = f.timeLoopKnowledge;
         node.nextNodeId = SafeAtoi(f.nextNodeIdText);
 
-        node.flagsSetOffset = flagRefCount;
-        node.flagsSetCount = ParseFlagsField(f.flagsSet, flagsPool, ref flagRefCount);
+        node.flagsSetOffset = flagList.Count;
+        node.flagsSetCount = ParseFlagsField(f.flagsSet, flagList);
 
-        node.flagsReqOffset = flagRefCount;
-        node.flagsReqCount = ParseFlagsField(f.flagsReq, flagsPool, ref flagRefCount);
+        node.flagsReqOffset = flagList.Count;
+        node.flagsReqCount = ParseFlagsField(f.flagsReq, flagList);
     }
 
-    void AddChoice(int parentIndex, string label, int gotoId, string choiceSetField)
+    void AddChoice(List<DialogueNode> nodeList, List<Choice> choiceList, List<int> flagList,
+                   int parentIndex, string label, int gotoId, string choiceSetField)
     {
-        if (choiceCount >= MaxChoices) throw new Exception("MaxChoices exceeded");
-        ref DialogueNode parent = ref nodes[parentIndex];
+        var parent = nodeList[parentIndex];
+        Choice ch = new Choice
+        {
+            label = label,
+            gotoNodeId = gotoId,
+            setOffset = flagList.Count
+        };
+        ch.setCount = ParseFlagsField(choiceSetField, flagList);
 
-        ref Choice ch = ref choicesPool[choiceCount];
-        ch.label = label;
-        ch.gotoNodeId = gotoId;
-        ch.setOffset = flagRefCount;
-        ch.setCount = ParseFlagsField(choiceSetField, flagsPool, ref flagRefCount);
-
-        if (parent.choiceCount == 0) parent.choiceOffset = choiceCount;
+        if (parent.choiceCount == 0)
+            parent.choiceOffset = choiceList.Count;
         parent.choiceCount++;
-        choiceCount++;
-    }
 
-    // ========= 외부에 노출되는 조회 API =========
+        nodeList[parentIndex] = parent;
+        choiceList.Add(ch);
+    }
 
     public bool TryGetNodeById(int nodeId, out DialogueNode node, out int index)
     {
+        if (_nodeIndexById.TryGetValue(nodeId, out index))
+        {
+            if ((uint)index < (uint)nodes.Length)
+            {
+                node = nodes[index];
+                return true;
+            }
+        }
+
         index = -1;
         node = default;
-        if ((uint)nodeId >= MaxNodes) return false;
-
-        int idx = nodeIndexById[nodeId];
-        if (idx < 0 || idx >= nodeCount) return false;
-
-        index = idx;
-        node = nodes[idx];
-        return true;
+        return false;
     }
 
     public ReadOnlySpan<Choice> GetChoicesOf(ref DialogueNode node)
     {
-        if (node.choiceCount <= 0) return ReadOnlySpan<Choice>.Empty;
+        if (node.choiceCount <= 0 || choicesPool.Length == 0)
+            return ReadOnlySpan<Choice>.Empty;
         return new ReadOnlySpan<Choice>(choicesPool, node.choiceOffset, node.choiceCount);
     }
 
@@ -197,15 +222,8 @@ public sealed class DialogueDatabase : ScriptableObject
         if (string.IsNullOrEmpty(indexKey))
             return false;
 
-        for (int i = 0; i < nodeCount; i++)
-        {
-            ref DialogueNode node = ref nodes[i];
-            if (string.Equals(node.indexKey, indexKey, StringComparison.OrdinalIgnoreCase))
-            {
-                nodeId = node.nodeId;
-                return true;
-            }
-        }
+        if (_indexKeyLookup.TryGetValue(indexKey, out nodeId))
+            return true;
 
         return false;
     }
@@ -390,7 +408,7 @@ public sealed class DialogueDatabase : ScriptableObject
         return val * sign;
     }
 
-    static int ParseFlagsField(string field, int[] pool, ref int cnt)
+    static int ParseFlagsField(string field, List<int> pool)
     {
         if (string.IsNullOrWhiteSpace(field)) return 0;
         field = field.Replace(" ", string.Empty);
@@ -401,8 +419,7 @@ public sealed class DialogueDatabase : ScriptableObject
             string tok = (amp < 0) ? field.Substring(start) : field.Substring(start, amp - start);
             if (tok.Length > 0)
             {
-                if (cnt >= MaxFlagRefs) throw new Exception("MaxFlagRefs exceeded");
-                pool[cnt++] = SafeAtoi(tok);
+                pool.Add(SafeAtoi(tok));
                 added++;
             }
             if (amp < 0) break;

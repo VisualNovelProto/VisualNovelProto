@@ -1,19 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
 
 public sealed class CharacterDatabase : ScriptableObject
 {
-    public const int MaxCharacters = 4096;
-
-    [NonSerialized] public CharacterEntry[] entries = new CharacterEntry[MaxCharacters];
-    [NonSerialized] public bool[] present = new bool[MaxCharacters];
+    [NonSerialized] public CharacterEntry[] entries = Array.Empty<CharacterEntry>();
+    [NonSerialized] public bool[] present = Array.Empty<bool>();
     [NonSerialized] public int entryCount;
 
     [NonSerialized] public CharacterSet owned;
 
-    public static CharacterDatabase LoadFromResources(string pathWithoutExt = "Story/characters")
+    public static CharacterDatabase LoadFromResources(string pathWithoutExt = "StoryText/characters")
     {
         TextAsset csv = Resources.Load<TextAsset>(pathWithoutExt);
         if (csv == null) throw new Exception($"characters csv not found: Resources/{pathWithoutExt}.csv");
@@ -22,12 +21,20 @@ public sealed class CharacterDatabase : ScriptableObject
         return db;
     }
 
-    // CSV Çì´õ:
+    // CSV :
     // id,name,colorHex,desc,thumb,group,abilityName,abilityDesc,penaltyName,penaltyDesc
     public void LoadFromCsvText(string csvText)
     {
-        entryCount = 0; owned.Clear();
-        for (int i = 0; i < MaxCharacters; i++) { present[i] = false; entries[i] = default; }
+        owned.Clear();
+        entryCount = 0;
+        entries = Array.Empty<CharacterEntry>();
+        present = Array.Empty<bool>();
+
+        if (string.IsNullOrWhiteSpace(csvText))
+            return;
+
+        var map = new Dictionary<int, CharacterEntry>();
+        int maxId = -1;
 
         using (StringReader r = new StringReader(csvText))
         {
@@ -43,9 +50,10 @@ public sealed class CharacterDatabase : ScriptableObject
                     out string abilityName, out string abilityDesc,
                     out string penaltyName, out string penaltyDesc);
 
-                if ((uint)id >= MaxCharacters) throw new Exception($"character id out of range: {id}");
+                if (id < 0)
+                    throw new Exception($"character id must be >= 0: {id}");
 
-                entries[id] = new CharacterEntry
+                var entry = new CharacterEntry
                 {
                     id = id,
                     name = name,
@@ -58,9 +66,23 @@ public sealed class CharacterDatabase : ScriptableObject
                     penaltyName = penaltyName,
                     penaltyDesc = penaltyDesc
                 };
-                present[id] = true;
-                if (id + 1 > entryCount) entryCount = id + 1;
+
+                map[id] = entry;
+                if (id > maxId) maxId = id;
             }
+        }
+
+        if (map.Count == 0)
+            return;
+
+        entryCount = maxId + 1;
+        entries = new CharacterEntry[entryCount];
+        present = new bool[entryCount];
+
+        foreach (var kv in map)
+        {
+            entries[kv.Key] = kv.Value;
+            present[kv.Key] = true;
         }
     }
 
@@ -71,7 +93,7 @@ public sealed class CharacterDatabase : ScriptableObject
         out string abilityName, out string abilityDesc,
         out string penaltyName, out string penaltyDesc)
     {
-        // 10Ä­ ÆÄ½Ì
+        // 10Ä­ Ä½
         string[] slots = new string[10];
         int si = 0;
         var sb = new StringBuilder(256);
@@ -131,16 +153,25 @@ public sealed class CharacterDatabase : ScriptableObject
 
     static string NormalizeColor(string s)
     {
-        if (string.IsNullOrWhiteSpace(s)) return "#A8D8FF"; // ±âº» Ä³¸¯ÅÍ»ö
+        if (string.IsNullOrWhiteSpace(s)) return "#A8D8FF"; // default tint
         s = s.Trim();
         return s[0] == '#' ? s : ("#" + s);
     }
 
-    public bool Exists(int id) { return (uint)id < MaxCharacters && present[id]; }
+    public bool Exists(int id)
+    {
+        return (uint)id < present.Length && present[id];
+    }
 
     public bool TryGetEntry(int id, out CharacterEntry e)
     {
-        if (Exists(id)) { e = entries[id]; return true; }
-        e = default; return false;
+        if (Exists(id))
+        {
+            e = entries[id];
+            return true;
+        }
+
+        e = default;
+        return false;
     }
 }

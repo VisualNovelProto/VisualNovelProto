@@ -85,32 +85,51 @@ public sealed class SaveLoadManager : MonoBehaviour
     }
 
     // === 수명주기 ===
+    bool _sceneEventsSubscribed;
+
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        SceneManager.sceneLoaded += OnSceneLoaded;
+        SubscribeSceneEvents();
         _sessionStart = DateTime.UtcNow;
     }
+
+    void OnEnable() => SubscribeSceneEvents();
+    void OnDisable() => UnsubscribeSceneEvents();
 
     void OnDestroy()
     {
         if (Instance == this) Instance = null;
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        UnsubscribeSceneEvents();
     }
-    void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
-    void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
+
+    void SubscribeSceneEvents()
+    {
+        if (_sceneEventsSubscribed) return;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        _sceneEventsSubscribed = true;
+    }
+
+    void UnsubscribeSceneEvents()
+    {
+        if (!_sceneEventsSubscribed) return;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        _sceneEventsSubscribed = false;
+    }
+
+    public void ApplySceneBindings(SceneRefHub hub)
+    {
+        runner = hub != null ? hub.dialogueRunner : null;
+        ui = hub != null ? hub.dialogueUI : null;
+    }
 
     void OnSceneLoaded(Scene s, LoadSceneMode m)
     {
         // 씬 허브에서 의존 레퍼런스 주입
-        var hub = FindObjectOfType<SceneRefHub>();
-        if (hub != null)
-        {
-            runner = hub.dialogueRunner;
-            ui = hub.dialogueUI;
-        }
+        runner = null;
+        ui = null;
 
         // 씬 바뀌면 오토세이브 타이머/진행 감지 초기화
         _timer = 0f;
