@@ -34,8 +34,6 @@ public sealed class DialogueRunner : MonoBehaviour
         Step();
     }
 
-        NodeEntered?.Invoke(current);
-
     public DialogueUI ui; // 에디터에서 할당
 
     DialogueDatabase db;
@@ -108,6 +106,8 @@ public sealed class DialogueRunner : MonoBehaviour
             ui.ShowNode(current, db);
         else
             Debug.Log($"[{current.nodeId}] {current.speaker}: {current.text}");
+
+        NodeEntered?.Invoke(current);
 
         return true;
     }
