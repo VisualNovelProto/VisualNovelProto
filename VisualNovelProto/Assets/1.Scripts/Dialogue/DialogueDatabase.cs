@@ -184,6 +184,25 @@ public sealed class DialogueDatabase : ScriptableObject
         return new ReadOnlySpan<Choice>(choicesPool, node.choiceOffset, node.choiceCount);
     }
 
+    public bool TryGetNodeIdByIndexKey(string indexKey, out int nodeId)
+    {
+        nodeId = -1;
+        if (string.IsNullOrEmpty(indexKey))
+            return false;
+
+        for (int i = 0; i < nodeCount; i++)
+        {
+            ref DialogueNode node = ref nodes[i];
+            if (string.Equals(node.indexKey, indexKey, StringComparison.OrdinalIgnoreCase))
+            {
+                nodeId = node.nodeId;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     static bool HeaderHasVoiceColumn(string headerLine)
     {
         if (string.IsNullOrWhiteSpace(headerLine)) return true;

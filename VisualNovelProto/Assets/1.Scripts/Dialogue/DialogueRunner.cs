@@ -9,7 +9,34 @@ public sealed class DialogueRunner : MonoBehaviour
     public TextAsset csv;
     public int startNodeId = 0;
 
-    public DialogueUI ui; // ¿¡µğÅÍ¿¡¼­ ÇÒ´ç
+    public event Action<DialogueNode> NodeEntered;
+
+    public DialogueDatabase Database => db;
+
+    public bool TryGetNodeIdByIndexKey(string indexKey, out int nodeId)
+    {
+        nodeId = -1;
+        if (db == null || string.IsNullOrEmpty(indexKey))
+            return false;
+        return db.TryGetNodeIdByIndexKey(indexKey, out nodeId);
+    }
+
+    public void RestartAtNode(int nodeId)
+    {
+        if (nodeId < 0) nodeId = startNodeId;
+
+        flags.Clear();
+        sp = 0;
+        hasCurrent = false;
+        current = default;
+
+        Push(nodeId);
+        Step();
+    }
+
+        NodeEntered?.Invoke(current);
+
+    public DialogueUI ui; // ì—ë””í„°ì—ì„œ í• ë‹¹
 
     DialogueDatabase db;
     FlagSet flags;
@@ -21,14 +48,14 @@ public sealed class DialogueRunner : MonoBehaviour
     DialogueNode current;
     bool hasCurrent;
 
-    // DialogueRunner.cs ³»ºÎ ¾îµò°¡¿¡ Ãß°¡ (public)
+    // DialogueRunner.cs ë‚´ë¶€ ì–´ë”˜ê°€ì— ì¶”ê°€ (public)
     public int GetCurrentNodeId() => hasCurrent ? current.nodeId : -1;
 
     public bool HasFlag(int id) => flags.Has(id);
     public void SetFlag(int id) => flags.Set(id);
     public void ClearAllFlags() => flags.Clear();
 
-    // ÀúÀåµÈ ³ëµå·Î ¹Ù·Î ÀÌµ¿ (UI ¾÷µ¥ÀÌÆ® Æ÷ÇÔ)
+    // ì €ì¥ëœ ë…¸ë“œë¡œ ë°”ë¡œ ì´ë™ (UI ì—…ë°ì´íŠ¸ í¬í•¨)
     public void JumpToNode(int nodeId)
     {
         if (nodeId < 0) return;
@@ -73,7 +100,7 @@ public sealed class DialogueRunner : MonoBehaviour
 
         hasCurrent = true;
 
-        // ? Æ®·£Áö¼Ç ÈÅ: ³ëµå ÁøÀÔ Á÷ÈÄ Àç»ı(ÀÔ·ÂÀº TransitionManager¿¡¼­ ¸·À½)
+        // ? íŠ¸ëœì§€ì…˜ í›…: ë…¸ë“œ ì§„ì… ì§í›„ ì¬ìƒ(ì…ë ¥ì€ TransitionManagerì—ì„œ ë§‰ìŒ)
         if (!string.IsNullOrEmpty(current.transition))
             TransitionManager.Play(current.transition);
 
@@ -87,10 +114,10 @@ public sealed class DialogueRunner : MonoBehaviour
 
     public void Step()
     {
-        // ÀÏ½ÃÁ¤Áö/Æ®·£Áö¼Ç/ÆĞ³Î¿­¸² Áß¿¡´Â ÁøÇà ±İÁö
+        // ì¼ì‹œì •ì§€/íŠ¸ëœì§€ì…˜/íŒ¨ë„ì—´ë¦¼ ì¤‘ì—ëŠ” ì§„í–‰ ê¸ˆì§€
         if (PauseMenu.IsPaused || TransitionManager.IsPlaying || UiModalGate.IsOpen) return;
 
-        // ½ºÅÃ¿¡ ¿¹¾àµÈ ³ëµå°¡ ÀÖÀ¸¸é ¿ì¼± ÁøÀÔ
+        // ìŠ¤íƒì— ì˜ˆì•½ëœ ë…¸ë“œê°€ ìˆìœ¼ë©´ ìš°ì„  ì§„ì…
         while (sp > 0)
         {
             int nid = Pop();
@@ -99,7 +126,7 @@ public sealed class DialogueRunner : MonoBehaviour
 
         if (hasCurrent)
         {
-            // ¼±ÅÃÁö Ç¥½Ã
+            // ì„ íƒì§€ í‘œì‹œ
             if (current.HasChoices)
             {
                 var choices = db.GetChoicesOf(ref current);
@@ -116,14 +143,14 @@ public sealed class DialogueRunner : MonoBehaviour
                 return;
             }
 
-            // ´ÙÀ½ ³ëµå·Î ´Ü¼ø ÀÌµ¿
+            // ë‹¤ìŒ ë…¸ë“œë¡œ ë‹¨ìˆœ ì´ë™
             if (current.nextNodeId >= 0)
             {
                 EnterNode(current.nextNodeId);
                 return;
             }
 
-            // Á¾·á
+            // ì¢…ë£Œ
             hasCurrent = false;
             if (ui == null) Debug.Log("End of script.");
         }
