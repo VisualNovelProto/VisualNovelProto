@@ -64,6 +64,21 @@ public static class GlobalFlags
         if (changed) Save();
     }
 
+    public static void AddRange(IEnumerable<int> ids)
+    {
+        if (ids == null) return;
+        Ensure(); bool changed = false;
+        foreach (int v in ids)
+        {
+            if (v > 0 && _set.Add(v))
+            {
+                changed = true;
+                NotifyFlagAdded(v);
+            }
+        }
+        if (changed) Save();
+    }
+
     static void NotifyFlagAdded(int id)
     {
         if (id <= 0 || FlagAdded == null)

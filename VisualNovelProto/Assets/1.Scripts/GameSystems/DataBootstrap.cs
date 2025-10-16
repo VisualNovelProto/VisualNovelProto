@@ -2,40 +2,57 @@ using UnityEngine;
 
 public sealed class DataBootstrap : MonoBehaviour
 {
-    public DialogueUI ui;                 // Canvas의 DialogueUI 드래그
-    public CollectionsPanel collections;  // PauseMenu 안에 있는 CollectionsPanel 드래그
+    [Header("Scene Bindings")]
+    public DialogueUI ui;
+    public CollectionsPanel collections;
 
-    public string glossaryPath = "StoryText/glossary";   // Resources/<path>.csv
-    public string charactersPath = "StoryText/characters"; // Resources/<path>.csv
+    [Header("CSV Resources")]
+    public string glossaryPath = "StoryText/glossary";
+    public string charactersPath = "StoryText/characters";
 
     void Awake()
     {
         var root = GameRoot.Instance;
+        var characterDb = ResolveCharacterDatabase(root);
+        var glossaryDb = ResolveGlossaryDatabase(root);
 
         if (ui != null)
         {
             if (ui.characters == null)
-                ui.characters = root ? root.characterDb : CharacterDatabase.LoadFromResources(charactersPath);
+                ui.characters = characterDb;
             if (ui.glossary == null)
-                ui.glossary = root ? root.glossaryDb : GlossaryDatabase.LoadFromResources(glossaryPath);
-
-        }
-        if (collections != null && collections.characterViewer != null)
-        {
-            var cdb = root ? root.characterDb
-                           : (ui != null ? ui.characters : CharacterDatabase.LoadFromResources(charactersPath));
-            collections.characterViewer.Bind(cdb);
+                ui.glossary = glossaryDb;
         }
 
-        if (collections != null && collections.characterViewer != null)
+        if (collections != null)
         {
-            collections.characterViewer.Bind(root != null ? root.characterDb : ui.characters);
+            if (collections.characterViewer != null && characterDb != null)
+                collections.characterViewer.Bind(characterDb);
+
+            if (collections.glossaryViewer != null && glossaryDb != null)
+                collections.glossaryViewer.gdb = glossaryDb;
         }
-        //if (collections != null && collections.glossaryViewer != null)
-        //{
-        //    var gdb = root ? root.glossaryDb
-        //                   : (ui != null ? ui.glossary : GlossaryDatabase.LoadFromResources(glossaryPath));
-        //    collections.glossaryViewer.Bind(gdb);
-        //}
+    }
+
+    CharacterDatabase ResolveCharacterDatabase(GameRoot root)
+    {
+        if (root && root.characterDb != null)
+            return root.characterDb;
+
+        if (ui != null && ui.characters != null)
+            return ui.characters;
+
+        return CharacterDatabase.LoadFromResources(charactersPath);
+    }
+
+    GlossaryDatabase ResolveGlossaryDatabase(GameRoot root)
+    {
+        if (root && root.glossaryDb != null)
+            return root.glossaryDb;
+
+        if (ui != null && ui.glossary != null)
+            return ui.glossary;
+
+        return GlossaryDatabase.LoadFromResources(glossaryPath);
     }
 }

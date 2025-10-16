@@ -71,6 +71,7 @@ public sealed class TimeLoopManager : MonoBehaviour
     public TimeLoopSlot CurrentSlot => schedule?.GetSlotOrDefault(_currentSlotIndex);
     public TimeLoopSlotBranch CurrentBranch => _currentBranch;
     public int LoopCount => _loopCount;
+    public DialogueRunner Runner => runner;
 
     public int CurrentMinutes => CurrentSlot?.minuteOfDay ?? 0;
 
@@ -96,6 +97,42 @@ public sealed class TimeLoopManager : MonoBehaviour
 
         if (watchUI != null)
             watchUI.Bind(this);
+    }
+
+    public void ApplySceneBindings(SceneRefHub hub)
+    {
+        if (hub == null)
+        {
+            if (runner != null)
+            {
+                UnbindRunner();
+                runner = null;
+            }
+            return;
+        }
+
+        if (hub.dialogueRunner != null)
+        {
+            runner = hub.dialogueRunner;
+            BindRunnerIfNeeded();
+        }
+
+        if (hub.collectionsPanel != null && hub.collectionsPanel.characterViewer != null)
+        {
+            var sourceDb = GameRoot.Instance ? GameRoot.Instance.characterDb : runner?.ui?.characters;
+            if (sourceDb != null)
+                hub.collectionsPanel.characterViewer.Bind(sourceDb);
+        }
+
+        if (autoBindWatchUI)
+        {
+            var foundWatch = hub.GetComponentInChildren<TimeLoopWatchUI>(includeInactive: true);
+            if (foundWatch != null)
+            {
+                watchUI = foundWatch;
+                watchUI.Bind(this);
+            }
+        }
     }
 
     void OnEnable()

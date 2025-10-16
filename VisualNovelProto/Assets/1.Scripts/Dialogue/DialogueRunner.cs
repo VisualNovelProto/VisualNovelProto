@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class DialogueRunner : MonoBehaviour
@@ -8,6 +9,9 @@ public sealed class DialogueRunner : MonoBehaviour
 
     public TextAsset csv;
     public int startNodeId = 0;
+
+    [Header("Flag Domains")]
+    public FlagDomainCatalog flagCatalog;
 
     public event Action<DialogueNode> NodeEntered;
 
@@ -45,6 +49,8 @@ public sealed class DialogueRunner : MonoBehaviour
 
     DialogueNode current;
     bool hasCurrent;
+
+    readonly List<int> _persistentFlagBuffer = new List<int>(16);
 
     // DialogueRunner.cs 내부 어딘가에 추가 (public)
     public int GetCurrentNodeId() => hasCurrent ? current.nodeId : -1;
@@ -93,8 +99,7 @@ public sealed class DialogueRunner : MonoBehaviour
         if (!flags.HasAll(db.flagsPool, current.flagsReqOffset, current.flagsReqCount))
             return false;
 
-        flags.SetAll(db.flagsPool, current.flagsSetOffset, current.flagsSetCount);
-        GlobalFlags.AddRange(db.flagsPool, current.flagsSetOffset, current.flagsSetCount);
+        ApplyFlagSet(current.flagsSetOffset, current.flagsSetCount);
 
         hasCurrent = true;
 
@@ -169,13 +174,32 @@ public sealed class DialogueRunner : MonoBehaviour
 
         ref readonly Choice ch = ref span[index];
 
-        flags.SetAll(db.flagsPool, ch.setOffset, ch.setCount);
-        GlobalFlags.AddRange(db.flagsPool, ch.setOffset, ch.setCount);
+        ApplyFlagSet(ch.setOffset, ch.setCount);
 
         if (ch.gotoNodeId >= 0)
         {
             Push(ch.gotoNodeId);
             Step();
+        }
+    }
+
+    void ApplyFlagSet(int offset, int count)
+    {
+        if (count <= 0)
+            return;
+
+        flags.SetAll(db.flagsPool, offset, count);
+
+        if (flagCatalog != null)
+        {
+            _persistentFlagBuffer.Clear();
+            flagCatalog.CollectPersistent(db.flagsPool, offset, count, _persistentFlagBuffer);
+            if (_persistentFlagBuffer.Count > 0)
+                GlobalFlags.AddRange(_persistentFlagBuffer);
+        }
+        else
+        {
+            GlobalFlags.AddRange(db.flagsPool, offset, count);
         }
     }
 }
