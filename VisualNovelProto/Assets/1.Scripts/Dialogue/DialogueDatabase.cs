@@ -25,6 +25,12 @@ public sealed class DialogueDatabase : ScriptableObject
     public const string CsvHeaderNew =
         "Index,nodeId,rowType,speaker,text,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq";
 
+    struct HeaderInfo
+    {
+        public bool hasVoice;
+        public bool hasLoopKnowledge;
+    }
+
     public static DialogueDatabase LoadFromResources(string path = "StoryText/main")
     {
         TextAsset csv = Resources.Load<TextAsset>(path);
@@ -41,14 +47,14 @@ public sealed class DialogueDatabase : ScriptableObject
         {
             string line = sr.ReadLine(); // header
             if (line == null) throw new Exception("CSV empty");
-            bool headerHasVoice = HeaderHasVoiceColumn(line);
+            HeaderInfo headerInfo = AnalyzeHeader(line);
 
             int lineNo = 1;
             while ((line = sr.ReadLine()) != null)
             {
                 lineNo++;
                 if (string.IsNullOrWhiteSpace(line)) continue;
-                ParseCsvLine(line, headerHasVoice, out CsvFields f);
+                ParseCsvLine(line, headerInfo, out CsvFields f);
 
                 if (string.Equals(f.rowType, "Choice", StringComparison.OrdinalIgnoreCase))
                 {
@@ -137,6 +143,7 @@ public sealed class DialogueDatabase : ScriptableObject
         node.cg = f.cg;
         node.transition = f.transition; // transition 매핑
         node.advancePolicy = f.advancePolicy;
+        node.loopKnowledge = f.timeLoopKnowledge;
         node.nextNodeId = SafeAtoi(f.nextNodeIdText);
 
         node.flagsSetOffset = flagRefCount;
@@ -203,25 +210,60 @@ public sealed class DialogueDatabase : ScriptableObject
         return false;
     }
 
-    static bool HeaderHasVoiceColumn(string headerLine)
+    static HeaderInfo AnalyzeHeader(string headerLine)
     {
-        if (string.IsNullOrWhiteSpace(headerLine)) return true;
+        if (string.IsNullOrWhiteSpace(headerLine))
+            throw new Exception("CSV header missing");
 
         string trimmed = headerLine.Trim();
-        if (string.Equals(trimmed, CsvHeaderLegacy, StringComparison.OrdinalIgnoreCase)) return true;
-        if (string.Equals(trimmed, CsvHeaderNew, StringComparison.OrdinalIgnoreCase)) return false;
-        if (trimmed.IndexOf(",voice", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+        bool hasLoopKnowledge = trimmed.IndexOf(",timeLoopKnowledge", StringComparison.OrdinalIgnoreCase) >= 0;
 
-        int columnCount = CountCsvColumns(trimmed);
-        if (columnCount == 18) return true;
-        if (columnCount == 17) return false;
+        int totalColumns = CountCsvColumns(trimmed);
+        int baseColumns = hasLoopKnowledge ? totalColumns - 1 : totalColumns;
 
-        throw new Exception($"Unexpected CSV header format: {headerLine}");
+        HeaderInfo info = default;
+        if (baseColumns == 18)
+        {
+            info.hasVoice = true;
+        }
+        else if (baseColumns == 17)
+        {
+            info.hasVoice = false;
+        }
+        else
+        {
+            string normalized = trimmed;
+            if (hasLoopKnowledge)
+            {
+                int idx = normalized.LastIndexOf(",timeLoopKnowledge", StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
+                    normalized = normalized.Substring(0, idx);
+                normalized = normalized.TrimEnd(',');
+            }
+
+            if (string.Equals(normalized, CsvHeaderLegacy, StringComparison.OrdinalIgnoreCase))
+            {
+                info.hasVoice = true;
+            }
+            else if (string.Equals(normalized, CsvHeaderNew, StringComparison.OrdinalIgnoreCase))
+            {
+                info.hasVoice = false;
+            }
+            else
+            {
+                throw new Exception($"Unexpected CSV header format: {headerLine}");
+            }
+        }
+
+        info.hasLoopKnowledge = hasLoopKnowledge;
+        return info;
     }
 
-    static void ParseCsvLine(string line, bool headerHasVoice, out CsvFields f)
+    static void ParseCsvLine(string line, HeaderInfo header, out CsvFields f)
     {
-        string[] slots = new string[headerHasVoice ? 18 : 17];
+        int baseColumnCount = header.hasVoice ? 18 : 17;
+        int totalColumns = baseColumnCount + (header.hasLoopKnowledge ? 1 : 0);
+        string[] slots = new string[totalColumns];
         int si = 0;
         var sb = new StringBuilder(256);
         bool inQuote = false;
@@ -260,19 +302,20 @@ public sealed class DialogueDatabase : ScriptableObject
             rowType = SlotOrDefault(slots, 2),
             speaker = SlotOrDefault(slots, 3),
             text = SlotOrDefault(slots, 4),
-            voice = headerHasVoice ? SlotOrDefault(slots, 5) : null,
-            actors = SlotOrDefault(slots, headerHasVoice ? 6 : 5),
-            bgm = SlotOrDefault(slots, headerHasVoice ? 7 : 6),
-            sfx = SlotOrDefault(slots, headerHasVoice ? 8 : 7),
-            cg = SlotOrDefault(slots, headerHasVoice ? 9 : 8),
-            transition = SlotOrDefault(slots, headerHasVoice ? 10 : 9),
-            advancePolicy = SlotOrDefault(slots, headerHasVoice ? 11 : 10),
-            nextNodeIdText = SlotOrDefault(slots, headerHasVoice ? 12 : 11),
-            choiceLabel = SlotOrDefault(slots, headerHasVoice ? 13 : 12),
-            choiceGoto = SlotOrDefault(slots, headerHasVoice ? 14 : 13),
-            choiceSet = SlotOrDefault(slots, headerHasVoice ? 15 : 14),
-            flagsSet = SlotOrDefault(slots, headerHasVoice ? 16 : 15),
-            flagsReq = SlotOrDefault(slots, headerHasVoice ? 17 : 16),
+            voice = header.hasVoice ? SlotOrDefault(slots, 5) : null,
+            actors = SlotOrDefault(slots, header.hasVoice ? 6 : 5),
+            bgm = SlotOrDefault(slots, header.hasVoice ? 7 : 6),
+            sfx = SlotOrDefault(slots, header.hasVoice ? 8 : 7),
+            cg = SlotOrDefault(slots, header.hasVoice ? 9 : 8),
+            transition = SlotOrDefault(slots, header.hasVoice ? 10 : 9),
+            advancePolicy = SlotOrDefault(slots, header.hasVoice ? 11 : 10),
+            nextNodeIdText = SlotOrDefault(slots, header.hasVoice ? 12 : 11),
+            choiceLabel = SlotOrDefault(slots, header.hasVoice ? 13 : 12),
+            choiceGoto = SlotOrDefault(slots, header.hasVoice ? 14 : 13),
+            choiceSet = SlotOrDefault(slots, header.hasVoice ? 15 : 14),
+            flagsSet = SlotOrDefault(slots, header.hasVoice ? 16 : 15),
+            flagsReq = SlotOrDefault(slots, header.hasVoice ? 17 : 16),
+            timeLoopKnowledge = header.hasLoopKnowledge ? SlotOrDefault(slots, baseColumnCount) : null,
         };
     }
 
@@ -322,6 +365,7 @@ public sealed class DialogueDatabase : ScriptableObject
         public string choiceSet;
         public string flagsSet;
         public string flagsReq;
+        public string timeLoopKnowledge;
     }
 
     static int ParseParentId(string nodeIdText)

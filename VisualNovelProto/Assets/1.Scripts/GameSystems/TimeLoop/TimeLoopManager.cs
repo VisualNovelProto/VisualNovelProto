@@ -15,6 +15,20 @@ public sealed class TimeLoopManager : MonoBehaviour
         public string[] values;
     }
 
+    struct KnowledgeDefinition
+    {
+        public string key;
+        public string displayName;
+        public string description;
+
+        public KnowledgeDefinition(string key, string displayName, string description)
+        {
+            this.key = key;
+            this.displayName = displayName ?? string.Empty;
+            this.description = description ?? string.Empty;
+        }
+    }
+
     const string DefaultKnowledgePrefsKey = "timeloop.knowledge.v1";
 
     public static TimeLoopManager Instance { get; private set; }
@@ -22,7 +36,6 @@ public sealed class TimeLoopManager : MonoBehaviour
     [Header("References")]
     public DialogueRunner runner;
     public TimeLoopSheet schedule;
-    public TimeLoopKnowledgeSheet knowledgeSheet;
     public TimeLoopWatchUI watchUI;
 
     [Header("Runtime Options")]
@@ -44,6 +57,9 @@ public sealed class TimeLoopManager : MonoBehaviour
     public event Action StateChanged;
 
     readonly HashSet<string> _knowledge = new HashSet<string>(StringComparer.Ordinal);
+    readonly Dictionary<string, KnowledgeDefinition> _knowledgeDefinitions = new Dictionary<string, KnowledgeDefinition>(StringComparer.Ordinal);
+    readonly List<KnowledgeDefinition> _knowledgeParseBuffer = new List<KnowledgeDefinition>();
+    readonly List<string> _knowledgeNamesBuffer = new List<string>();
     TimeLoopSlotBranch _currentBranch;
     int _currentSlotIndex = -1;
     int _loopCount;
@@ -71,6 +87,9 @@ public sealed class TimeLoopManager : MonoBehaviour
         Instance = this;
 
         LoadKnowledge();
+        _knowledgeDefinitions.Clear();
+        EnsureScheduleKnowledgePlaceholders();
+        EnsureOwnedKnowledgePlaceholders();
 
         if (autoBindWatchUI && watchUI == null)
             watchUI = FindObjectOfType<TimeLoopWatchUI>(includeInactive: true);
@@ -119,6 +138,7 @@ public sealed class TimeLoopManager : MonoBehaviour
         UnbindRunner();
         _boundRunner = runner;
         _boundRunner.NodeEntered += HandleNodeEntered;
+        RefreshKnowledgeDefinitions();
     }
 
     void UnbindRunner()
@@ -132,14 +152,16 @@ public sealed class TimeLoopManager : MonoBehaviour
 
     void HandleNodeEntered(DialogueNode node)
     {
-        if (knowledgeSheet == null || node.nodeId < 0)
+        if (node.nodeId < 0)
             return;
 
         bool changed = false;
-        foreach (var entry in knowledgeSheet.EnumerateUnlocksForIndexKey(node.indexKey))
+        ParseKnowledgeField(node.loopKnowledge, _knowledgeParseBuffer);
+
+        for (int i = 0; i < _knowledgeParseBuffer.Count; i++)
         {
-            if (entry == null || string.IsNullOrEmpty(entry.key))
-                continue;
+            var entry = _knowledgeParseBuffer[i];
+            RegisterKnowledgeDefinition(entry);
             if (_knowledge.Add(entry.key))
                 changed = true;
         }
@@ -162,6 +184,8 @@ public sealed class TimeLoopManager : MonoBehaviour
     {
         if (string.IsNullOrEmpty(key))
             return false;
+
+        EnsurePlaceholderDefinition(key);
 
         if (_knowledge.Add(key))
         {
@@ -264,6 +288,185 @@ public sealed class TimeLoopManager : MonoBehaviour
 
         Debug.LogWarning($"[TimeLoop] Failed to resolve node for branch '{branch.branchName}' (index key: '{branch.storyIndexKey}').");
         return false;
+    }
+
+    void RefreshKnowledgeDefinitions()
+    {
+        _knowledgeDefinitions.Clear();
+
+        var sourceRunner = runner != null ? runner : _boundRunner;
+        var database = sourceRunner != null ? sourceRunner.Database : null;
+        if (database != null)
+        {
+            for (int i = 0; i < database.nodeCount; i++)
+            {
+                ParseKnowledgeField(database.nodes[i].loopKnowledge, _knowledgeParseBuffer);
+                for (int j = 0; j < _knowledgeParseBuffer.Count; j++)
+                    RegisterKnowledgeDefinition(_knowledgeParseBuffer[j]);
+            }
+        }
+
+        EnsureScheduleKnowledgePlaceholders();
+        EnsureOwnedKnowledgePlaceholders();
+
+        if (watchUI != null)
+            watchUI.Refresh();
+    }
+
+    static void ParseKnowledgeField(string field, List<KnowledgeDefinition> buffer)
+    {
+        if (buffer == null)
+            return;
+
+        buffer.Clear();
+        if (string.IsNullOrWhiteSpace(field))
+            return;
+
+        string[] entries = field.Split(';');
+        for (int i = 0; i < entries.Length; i++)
+        {
+            string segment = entries[i];
+            if (string.IsNullOrWhiteSpace(segment))
+                continue;
+
+            string[] parts = segment.Split('|');
+            string key = parts.Length > 0 ? parts[0].Trim() : string.Empty;
+            if (string.IsNullOrEmpty(key))
+                continue;
+
+            string display = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+            string description = parts.Length > 2 ? parts[2].Trim() : string.Empty;
+            buffer.Add(new KnowledgeDefinition(key, display, description));
+        }
+    }
+
+    void RegisterKnowledgeDefinition(KnowledgeDefinition entry)
+    {
+        if (string.IsNullOrEmpty(entry.key))
+            return;
+
+        if (_knowledgeDefinitions.TryGetValue(entry.key, out var existing))
+        {
+            string display = string.IsNullOrEmpty(entry.displayName) ? existing.displayName : entry.displayName;
+            string description = string.IsNullOrEmpty(entry.description) ? existing.description : entry.description;
+            _knowledgeDefinitions[entry.key] = new KnowledgeDefinition(entry.key,
+                string.IsNullOrEmpty(display) ? entry.key : display,
+                description);
+        }
+        else
+        {
+            string display = string.IsNullOrEmpty(entry.displayName) ? entry.key : entry.displayName;
+            _knowledgeDefinitions[entry.key] = new KnowledgeDefinition(entry.key, display, entry.description);
+        }
+    }
+
+    void EnsureScheduleKnowledgePlaceholders()
+    {
+        if (schedule?.slots == null)
+            return;
+
+        for (int i = 0; i < schedule.slots.Length; i++)
+        {
+            var slot = schedule.slots[i];
+            if (slot?.branches == null)
+                continue;
+
+            for (int j = 0; j < slot.branches.Length; j++)
+            {
+                var branch = slot.branches[j];
+                if (branch?.requiredKnowledgeKeys == null)
+                    continue;
+
+                for (int k = 0; k < branch.requiredKnowledgeKeys.Length; k++)
+                    EnsurePlaceholderDefinition(branch.requiredKnowledgeKeys[k]);
+            }
+        }
+    }
+
+    void EnsureOwnedKnowledgePlaceholders()
+    {
+        foreach (var key in _knowledge)
+            EnsurePlaceholderDefinition(key);
+    }
+
+    void EnsurePlaceholderDefinition(string key)
+    {
+        if (string.IsNullOrEmpty(key) || _knowledgeDefinitions.ContainsKey(key))
+            return;
+        _knowledgeDefinitions[key] = new KnowledgeDefinition(key, key, string.Empty);
+    }
+
+    public string GetKnowledgeDisplayName(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+            return key;
+
+        if (_knowledgeDefinitions.TryGetValue(key, out var entry) && !string.IsNullOrEmpty(entry.displayName))
+            return entry.displayName;
+
+        return key;
+    }
+
+    public string GetKnowledgeDescription(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+            return string.Empty;
+
+        if (_knowledgeDefinitions.TryGetValue(key, out var entry))
+            return entry.description;
+
+        return string.Empty;
+    }
+
+    public string BuildRequirementSummary(TimeLoopSlotBranch branch)
+    {
+        if (branch == null)
+            return string.Empty;
+
+        if (!branch.HasRequirements)
+            return "기본 타임라인";
+
+        _knowledgeNamesBuffer.Clear();
+        if (branch.requiredKnowledgeKeys != null)
+        {
+            for (int i = 0; i < branch.requiredKnowledgeKeys.Length; i++)
+            {
+                string key = branch.requiredKnowledgeKeys[i];
+                if (string.IsNullOrEmpty(key))
+                    continue;
+                _knowledgeNamesBuffer.Add(GetKnowledgeDisplayName(key));
+            }
+        }
+
+        if (_knowledgeNamesBuffer.Count == 0)
+            return "기본 타임라인";
+
+        if (_knowledgeNamesBuffer.Count == 1)
+            return $"필요 지식: {_knowledgeNamesBuffer[0]}";
+
+        return $"필요 지식: {string.Join(", ", _knowledgeNamesBuffer)}";
+    }
+
+    public string BuildMissingRequirementSummary(TimeLoopSlotBranch branch)
+    {
+        if (branch == null)
+            return string.Empty;
+
+        if (!branch.HasRequirements)
+            return string.Empty;
+
+        _knowledgeNamesBuffer.Clear();
+        foreach (var key in branch.EnumerateMissingRequirements(_knowledge))
+        {
+            if (string.IsNullOrEmpty(key))
+                continue;
+            _knowledgeNamesBuffer.Add(GetKnowledgeDisplayName(key));
+        }
+
+        if (_knowledgeNamesBuffer.Count == 0)
+            return BuildRequirementSummary(branch);
+
+        return $"필요: {string.Join(", ", _knowledgeNamesBuffer)}";
     }
 
     void NotifyStateChanged()

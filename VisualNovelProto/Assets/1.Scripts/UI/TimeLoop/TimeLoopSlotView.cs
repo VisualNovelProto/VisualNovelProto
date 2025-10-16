@@ -65,16 +65,23 @@ public sealed class TimeLoopSlotView : MonoBehaviour
                 if (string.IsNullOrEmpty(label))
                     label = branch.description;
                 if (string.IsNullOrEmpty(label))
-                    label = branch.BuildRequirementSummary();
+                    label = _manager != null ? _manager.BuildRequirementSummary(branch) : branch.BuildRequirementSummary();
                 branchLabel.text = label;
             }
             else
             {
                 var lockedBranch = _manager?.GetNextLockedBranch(_slotIndex);
-                if (lockedBranch != null && !string.IsNullOrEmpty(lockedBranch.branchName))
-                    branchLabel.text = lockedBranch.branchName;
+                if (lockedBranch != null)
+                {
+                    if (!string.IsNullOrEmpty(lockedBranch.branchName))
+                        branchLabel.text = lockedBranch.branchName;
+                    else
+                        branchLabel.text = _manager != null ? _manager.BuildRequirementSummary(lockedBranch) : lockedBranch.BuildRequirementSummary();
+                }
                 else
+                {
                     branchLabel.text = string.Empty;
+                }
             }
         }
 
@@ -82,19 +89,17 @@ public sealed class TimeLoopSlotView : MonoBehaviour
         {
             if (hasBranch && branch != null)
             {
-                detailLabel.text = branch.BuildRequirementSummary();
+                detailLabel.text = _manager != null ? _manager.BuildRequirementSummary(branch) : branch.BuildRequirementSummary();
             }
             else
             {
                 var lockedBranch = _manager?.GetNextLockedBranch(_slotIndex);
                 if (lockedBranch != null)
                 {
-                    string missing = string.Join(", ", lockedBranch.EnumerateMissingRequirements(_manager?.Knowledge));
-                    if (string.IsNullOrEmpty(missing))
-                        missing = lockedBranch.BuildRequirementSummary();
-                    else
-                        missing = "필요: " + missing;
-                    detailLabel.text = missing;
+                    string summary = _manager != null ? _manager.BuildMissingRequirementSummary(lockedBranch) : string.Empty;
+                    if (string.IsNullOrEmpty(summary))
+                        summary = _manager != null ? _manager.BuildRequirementSummary(lockedBranch) : lockedBranch.BuildRequirementSummary();
+                    detailLabel.text = summary;
                 }
                 else
                 {
