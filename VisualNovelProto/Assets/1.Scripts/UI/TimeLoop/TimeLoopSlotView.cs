@@ -50,8 +50,8 @@ public sealed class TimeLoopSlotView : MonoBehaviour
         if (timeLabel != null)
             timeLabel.text = _slot != null ? _slot.GetDisplayLabel() : "--:--";
 
-        TimeLoopSlot resolvedSlot;
-        TimeLoopSlotBranch branch;
+        TimeLoopSlot resolvedSlot = null;
+        TimeLoopSlotBranch branch = null;
         bool hasBranch = _manager != null && _manager.TryGetResolvedBranch(_slotIndex, out resolvedSlot, out branch);
 
         if (resolvedSlot != null)

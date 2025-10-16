@@ -20,11 +20,12 @@ public static class GlobalCodex
         if (cdb != null)
         {
             cdb.owned.Clear();
-            foreach (var id in LoadIds(KeyC)) if ((uint)id < CharacterDatabase.MaxCharacters) cdb.owned.Set(id);
+            int maxCharacters = Mathf.Max(0, cdb.entryCount);
+            foreach (var id in LoadIds(KeyC)) if ((uint)id < maxCharacters) cdb.owned.Set(id);
         }
     }
 
-    // ----- Save (전체 저장) -----
+    // ----- Save (체 ) -----
     public static void SaveFrom(GlossaryDatabase gdb, CharacterDatabase cdb)
     {
         if (gdb != null) SaveIds(KeyG, EnumerateOwned(gdb.entryCount, gdb.owned.Has));
@@ -32,7 +33,7 @@ public static class GlobalCodex
         PlayerPrefs.Save();
     }
 
-    // ----- 증분 추가(해금 순간에 호출) -----
+    // -----  煞(邈  호) -----
     public static bool AddGlossary(GlossaryDatabase gdb, int id)
     {
         if (gdb == null || (uint)id >= GlossaryDatabase.MaxGlossary) return false;
@@ -45,7 +46,7 @@ public static class GlobalCodex
 
     public static bool AddCharacter(CharacterDatabase cdb, int id)
     {
-        if (cdb == null || (uint)id >= CharacterDatabase.MaxCharacters) return false;
+        if (cdb == null || (uint)id >= (uint)Mathf.Max(0, cdb.entryCount)) return false;
         if (cdb.owned.Has(id)) return false;
         cdb.owned.Set(id);
         SaveIds(KeyC, MergeIds(LoadIds(KeyC), id));
@@ -53,7 +54,7 @@ public static class GlobalCodex
         return true;
     }
 
-    // ===== 내부 유틸 =====
+    // =====  틸 =====
     static IEnumerable<int> EnumerateOwned(int max, System.Func<int, bool> has)
     {
         var list = new List<int>(256);
@@ -78,7 +79,7 @@ public static class GlobalCodex
 
     static int[] MergeIds(int[] oldIds, int add)
     {
-        // 중복 방지
+        // 揷 
         for (int i = 0; i < oldIds.Length; i++) if (oldIds[i] == add) return oldIds;
         var list = new List<int>(oldIds.Length + 1);
         list.AddRange(oldIds);
