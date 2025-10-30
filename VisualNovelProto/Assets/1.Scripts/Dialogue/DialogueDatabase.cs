@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -17,6 +18,22 @@ public sealed class DialogueDatabase : ScriptableObject
     readonly Dictionary<int, int> _nodeIndexById = new Dictionary<int, int>();
     readonly Dictionary<string, int> _indexKeyLookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
+    static readonly char[] IndexMetadataSeparator = { '|' };
+    static readonly string[] TimestampFormats =
+    {
+        "yyyy-MM-dd HH:mm",
+        "yyyy/MM/dd HH:mm",
+        "yyyy.MM.dd HH:mm",
+        "yyyyMMddHHmm",
+        "yyyyMMdd-HHmm",
+        "yyyy/MM/dd'T'HH:mm",
+        "MM-dd HH:mm",
+        "MM/dd HH:mm",
+        "MMdd-HHmm",
+        "MMddHHmm",
+        "HH:mm"
+    };
+
     public const string CsvHeaderLegacy =
         "Index,nodeId,rowType,speaker,text,voice,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq";
     public const string CsvHeaderNew =
@@ -26,6 +43,16 @@ public sealed class DialogueDatabase : ScriptableObject
     {
         public bool hasVoice;
         public bool hasLoopKnowledge;
+    }
+
+    struct IndexMetadata
+    {
+        public string raw;
+        public string key;
+        public string display;
+        public string branch;
+        public string detail;
+        public DateTime? timestamp;
     }
 
     public static DialogueDatabase LoadFromResources(string path = "StoryText/main")
@@ -131,6 +158,12 @@ public sealed class DialogueDatabase : ScriptableObject
         DialogueNode shell = default;
         shell.nodeId = nodeId;
         shell.indexKey = string.Empty;
+        shell.indexRawValue = string.Empty;
+        shell.indexDisplayLabel = string.Empty;
+        shell.indexBranchLabel = string.Empty;
+        shell.indexDetailLabel = string.Empty;
+        shell.indexTimestampTicks = 0L;
+        shell.indexHasTimestamp = false;
         shell.nextNodeId = -1;
 
         int idx = nodeList.Count;
@@ -141,7 +174,23 @@ public sealed class DialogueDatabase : ScriptableObject
 
     void FillNode(ref DialogueNode node, CsvFields f, List<int> flagList)
     {
-        node.indexKey = string.IsNullOrEmpty(f.indexKey) ? node.indexKey : f.indexKey;
+        if (!string.IsNullOrEmpty(f.indexKey))
+        {
+            IndexMetadata metadata = ParseIndexMetadata(f.indexKey);
+            node.indexRawValue = metadata.raw;
+
+            if (!string.IsNullOrEmpty(metadata.key))
+                node.indexKey = metadata.key;
+            else if (string.IsNullOrEmpty(node.indexKey))
+                node.indexKey = metadata.raw;
+
+            node.indexDisplayLabel = metadata.display;
+            node.indexBranchLabel = metadata.branch;
+            node.indexDetailLabel = metadata.detail;
+            node.indexHasTimestamp = metadata.timestamp.HasValue;
+            node.indexTimestampTicks = metadata.timestamp?.Ticks ?? 0L;
+        }
+
         node.rowType = f.rowType;
         node.speaker = f.speaker;
         node.text = f.text;
@@ -275,6 +324,146 @@ public sealed class DialogueDatabase : ScriptableObject
 
         info.hasLoopKnowledge = hasLoopKnowledge;
         return info;
+    }
+
+    static IndexMetadata ParseIndexMetadata(string raw)
+    {
+        IndexMetadata metadata = default;
+
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            metadata.raw = string.Empty;
+            metadata.key = string.Empty;
+            metadata.display = string.Empty;
+            metadata.branch = string.Empty;
+            metadata.detail = string.Empty;
+            metadata.timestamp = null;
+            return metadata;
+        }
+
+        string trimmedRaw = raw.Trim();
+        metadata.raw = trimmedRaw;
+
+        string[] parts = trimmedRaw.Split(IndexMetadataSeparator, StringSplitOptions.None);
+        string key = parts.Length > 0 ? parts[0].Trim() : string.Empty;
+        string display = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+        string branch = parts.Length > 2 ? parts[2].Trim() : string.Empty;
+        string detail = parts.Length > 3 ? parts[3].Trim() : string.Empty;
+
+        metadata.key = key;
+        metadata.display = string.IsNullOrEmpty(display) ? BuildFallbackDisplay(key) : display;
+        metadata.branch = string.IsNullOrEmpty(branch) ? string.Empty : branch;
+        metadata.detail = string.IsNullOrEmpty(detail) ? string.Empty : detail;
+
+        if (TryParseTimestamp(metadata.display, out var timestamp) || TryParseTimestamp(key, out timestamp))
+            metadata.timestamp = timestamp;
+
+        return metadata;
+    }
+
+    static string BuildFallbackDisplay(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        return value.Replace('_', ' ');
+    }
+
+    static bool TryParseTimestamp(string value, out DateTime timestamp)
+    {
+        timestamp = default;
+
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        string trimmed = value.Trim();
+
+        if (DateTime.TryParse(trimmed, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out timestamp))
+        {
+            timestamp = DateTime.SpecifyKind(timestamp, DateTimeKind.Unspecified);
+            return true;
+        }
+
+        for (int i = 0; i < TimestampFormats.Length; i++)
+        {
+            if (DateTime.TryParseExact(trimmed, TimestampFormats[i], CultureInfo.InvariantCulture,
+                    DateTimeStyles.AllowWhiteSpaces, out timestamp))
+            {
+                timestamp = DateTime.SpecifyKind(timestamp, DateTimeKind.Unspecified);
+
+                if (TimestampFormats[i] == "HH:mm")
+                    timestamp = new DateTime(1, 1, 1, timestamp.Hour, timestamp.Minute, 0, DateTimeKind.Unspecified);
+
+                return true;
+            }
+        }
+
+        if (TryParseCompactDateTime(trimmed, out timestamp))
+        {
+            timestamp = DateTime.SpecifyKind(timestamp, DateTimeKind.Unspecified);
+            return true;
+        }
+
+        return false;
+    }
+
+    static bool TryParseCompactDateTime(string value, out DateTime timestamp)
+    {
+        timestamp = default;
+
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        string digitsOnly = value.Replace(" ", string.Empty);
+
+        if (digitsOnly.Length == 9 && digitsOnly[4] == '-')
+        {
+            string datePart = digitsOnly.Substring(0, 4);
+            string timePart = digitsOnly.Substring(5, 4);
+            if (TryParseMonthDay(datePart, out int month, out int day) && TryParseHourMinute(timePart, out int hour, out int minute))
+            {
+                timestamp = new DateTime(1, month, day, hour, minute, 0, DateTimeKind.Unspecified);
+                return true;
+            }
+        }
+        else if (digitsOnly.Length == 8)
+        {
+            string datePart = digitsOnly.Substring(0, 4);
+            string timePart = digitsOnly.Substring(4, 4);
+            if (TryParseMonthDay(datePart, out int month, out int day) && TryParseHourMinute(timePart, out int hour, out int minute))
+            {
+                timestamp = new DateTime(1, month, day, hour, minute, 0, DateTimeKind.Unspecified);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static bool TryParseMonthDay(string value, out int month, out int day)
+    {
+        month = 0;
+        day = 0;
+        if (value == null || value.Length != 4)
+            return false;
+
+        if (!int.TryParse(value.Substring(0, 2), out month) || !int.TryParse(value.Substring(2, 2), out day))
+            return false;
+
+        return month >= 1 && month <= 12 && day >= 1 && day <= 31;
+    }
+
+    static bool TryParseHourMinute(string value, out int hour, out int minute)
+    {
+        hour = 0;
+        minute = 0;
+        if (value == null || value.Length != 4)
+            return false;
+
+        if (!int.TryParse(value.Substring(0, 2), out hour) || !int.TryParse(value.Substring(2, 2), out minute))
+            return false;
+
+        return hour >= 0 && hour < 24 && minute >= 0 && minute < 60;
     }
 
     static void ParseCsvLine(string line, HeaderInfo header, out CsvFields f)
