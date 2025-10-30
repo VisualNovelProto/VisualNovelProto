@@ -6,7 +6,7 @@
 
 | 컬럼 | 필수 | 설명 |
 |------|------|------|
-| Index | 선택 | 사람 읽기용 식별자. `TimeLoopSheet` 등 외부 데이터가 노드를 참조할 때 사용합니다. |
+| Index | 선택 | 사람 읽기용 식별자. 타임루프 목적지 등 외부 데이터가 노드를 참조할 때 사용합니다. |
 | nodeId | 필수 | 정수 노드 ID. 저장/로드 및 분기 이동의 기준 값입니다. |
 | rowType | 필수 | `Node` 또는 `Choice`. `Choice` 행은 바로 앞 Node의 선택지로 묶입니다. |
 | speaker | 선택 | 발화자 표시 문자열. 비워두면 이름이 숨겨집니다. |
@@ -37,12 +37,13 @@
 - 세션 전용 플래그를 만들고 싶다면 `sessionOnlyFlags`에 ID를 명시하세요. 해당 플래그는 저장 슬롯과 로드 사이클에서는 유지되지만, `GlobalFlags`에는 기록되지 않습니다.
 - CSV에서 새 플래그를 추가할 때는 반드시 `FlagDomainCatalog`도 함께 갱신해 협업자에게 의도를 공유하세요.
 
-## 3. 타임루프 스케줄 (`TimeLoopSheet`)
+## 3. 타임루프 목적지 (`Story.csv` Index)
 
-- `Assets/Resources/StoryText` 또는 프로젝트 루트의 구글 시트를 진실의 소스로 삼고, `TimeLoopSheetCsvImporter`를 통해 ScriptableObject 자산을 생성합니다.
-- CSV 헤더 및 상세 사용법은 [time_loop_data_workflow.md](./time_loop_data_workflow.md)의 "CSV 포맷 가이드"를 참고하십시오.
-- 에디터 UI: `Tools/Time Loop/Import Sheet From CSV...`
-- 커맨드라인: `Unity -projectPath <path> -executeMethod TimeLoopSheetCsvImporter.ImportFromCsv <csvPath> <assetPath>`
+- `TimeLoopManager`는 `Story.csv`의 `Index` 컬럼을 읽어 자동으로 목적지를 구성하며, 하나의 행에서 `|` 구분자를 사용해 표시 정보를 함께 적을 수 있습니다.
+- 기본 포맷은 `키|표시라벨|분기라벨|세부설명`이며, 첫 번째 토큰(키)만 필수입니다. 나머지 값은 비워도 되며, 비워둘 경우에는 키를 사람이 읽기 쉬운 형태(언더바 제거 등)로 변환해 사용합니다.
+- `0823-0923`, `2024-08-23 09:23`, `09:23` 등 표준 날짜/시간 포맷은 자동으로 인식되어 타임스탬프 기반으로 정렬/표시에 활용됩니다.
+- 분기 라벨이 비어 있으면 키 문자열이 그대로 표시되며, 세부 설명이 비어 있을 경우에는 원본 인덱스 문자열이 필요 시 보조 정보로 사용됩니다.
+- 각 목적지 키는 고유해야 하며 빈 문자열은 무시됩니다. CSV만 수정하면 시계 UI 및 루프 매니저가 즉시 갱신되므로 별도의 프리팹이나 ScriptableObject를 편집할 필요가 없습니다.
 
 ## 4. 글로서리 & 캐릭터 데이터
 
@@ -63,7 +64,7 @@
 
 ## 6. 체크리스트
 
-- [ ] CSV를 수정했으면 Git에 커밋하기 전에 Unity 에디터에서 `Import Sheet From CSV...`를 실행하거나, 커맨드라인으로 `TimeLoopSheet`를 재생성합니다.
+- [ ] `Story.csv`의 `Index` 값이 최신 상태인지, 동일한 키가 의도한 노드 집합을 가리키는지 확인합니다.
 - [ ] 새로운 플래그를 추가했으면 `FlagDomainCatalog`를 업데이트합니다.
 - [ ] Glossary/Character CSV를 변경했다면 `DataBootstrap`이 참조하는 경로(`StoryText/*`)가 일치하는지 확인합니다.
 - [ ] 씬에 `SceneRefHub`가 존재하는지, 그리고 필요한 UI/매니저 참조가 모두 연결되어 있는지 검토합니다.

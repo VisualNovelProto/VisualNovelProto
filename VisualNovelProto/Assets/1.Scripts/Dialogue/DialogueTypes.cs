@@ -16,6 +16,12 @@ public struct DialogueNode
 {
     public int nodeId;
     public string indexKey;
+    public string indexRawValue;
+    public string indexDisplayLabel;
+    public string indexBranchLabel;
+    public string indexDetailLabel;
+    public long indexTimestampTicks;
+    public bool indexHasTimestamp;
 
     public string rowType;
 
@@ -43,6 +49,18 @@ public struct DialogueNode
     public int choiceCount;
 
     public bool HasChoices => choiceCount > 0;
+
+    public bool TryGetIndexTimestamp(out DateTime timestamp)
+    {
+        if (!indexHasTimestamp)
+        {
+            timestamp = default;
+            return false;
+        }
+
+        timestamp = new DateTime(indexTimestampTicks, DateTimeKind.Unspecified);
+        return true;
+    }
 }
 
 [Serializable]

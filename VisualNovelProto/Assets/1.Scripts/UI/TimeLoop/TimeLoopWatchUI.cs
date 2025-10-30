@@ -4,8 +4,8 @@ using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
-/// Visual wrist watch widget placed in the top-left corner. Shows the current time slot and exposes
-/// buttons for jumping to other slots in the loop.
+/// Visual wrist watch widget placed in the top-left corner. Shows the current destination and exposes
+/// buttons for jumping to other destinations in the loop.
 /// </summary>
 public sealed class TimeLoopWatchUI : MonoBehaviour
 {
@@ -16,14 +16,14 @@ public sealed class TimeLoopWatchUI : MonoBehaviour
     public TMP_Text currentBranchLabel;
     public TMP_Text loopCountLabel;
     public Button toggleButton;
-    public GameObject slotListPanel;
-    public RectTransform slotListRoot;
-    public TimeLoopSlotView slotViewPrefab;
+    public GameObject destinationListPanel;
+    public RectTransform destinationListRoot;
+    public TimeLoopDestinationView destinationViewPrefab;
 
     [Header("Behaviour")]
     public bool openListOnStart;
 
-    readonly List<TimeLoopSlotView> _slotViews = new List<TimeLoopSlotView>();
+    readonly List<TimeLoopDestinationView> _destinationViews = new List<TimeLoopDestinationView>();
     bool _isOpen;
 
     void Awake()
@@ -60,11 +60,11 @@ public sealed class TimeLoopWatchUI : MonoBehaviour
         if (manager != null)
         {
             manager.StateChanged += HandleManagerStateChanged;
-            RebuildSlots();
+            RebuildDestinations();
         }
         else
         {
-            ClearSlots();
+            ClearDestinations();
         }
 
         Refresh();
@@ -83,78 +83,70 @@ public sealed class TimeLoopWatchUI : MonoBehaviour
         if (manager == null)
             return;
 
-        var currentSlot = manager.CurrentSlot;
         if (currentTimeLabel != null)
-            currentTimeLabel.text = currentSlot != null ? currentSlot.GetDisplayLabel() : "--:--";
+        {
+            string label = manager.CurrentDestinationLabel;
+            currentTimeLabel.text = string.IsNullOrEmpty(label) ? "--" : label;
+        }
 
         if (currentBranchLabel != null)
         {
-            if (manager.CurrentBranch != null)
-            {
-                string branchName = manager.CurrentBranch.branchName;
-                if (string.IsNullOrEmpty(branchName))
-                    branchName = manager.CurrentBranch.description;
-                if (string.IsNullOrEmpty(branchName))
-                    branchName = manager.BuildRequirementSummary(manager.CurrentBranch);
-                currentBranchLabel.text = branchName;
-            }
+            if (manager.TryGetDestination(manager.CurrentDestinationIndex, out var current))
+                currentBranchLabel.text = current.GetBranchLabel();
             else
-            {
-                currentBranchLabel.text = "";
-            }
+                currentBranchLabel.text = manager.CurrentDestinationKey ?? string.Empty;
         }
 
         if (loopCountLabel != null)
             loopCountLabel.text = manager.LoopCount.ToString();
 
-        EnsureSlotViews();
-        for (int i = 0; i < _slotViews.Count; i++)
-            _slotViews[i].Refresh();
+        EnsureDestinationViews();
+        for (int i = 0; i < _destinationViews.Count; i++)
+            _destinationViews[i].Refresh();
 
-        if (slotListPanel != null)
-            slotListPanel.SetActive(_isOpen);
+        if (destinationListPanel != null)
+            destinationListPanel.SetActive(_isOpen);
     }
 
-    void EnsureSlotViews()
+    void EnsureDestinationViews()
     {
-        if (manager == null || manager.schedule == null || slotListRoot == null || slotViewPrefab == null)
+        if (manager == null || destinationListRoot == null || destinationViewPrefab == null)
             return;
 
-        if (_slotViews.Count == manager.schedule.SlotCount)
+        if (_destinationViews.Count == manager.DestinationCount)
             return;
 
-        RebuildSlots();
+        RebuildDestinations();
     }
 
-    void RebuildSlots()
+    void RebuildDestinations()
     {
-        ClearSlots();
+        ClearDestinations();
 
-        if (manager == null || manager.schedule == null || slotListRoot == null || slotViewPrefab == null)
+        if (manager == null || destinationListRoot == null || destinationViewPrefab == null)
             return;
 
-        int count = manager.schedule.SlotCount;
+        int count = manager.DestinationCount;
         for (int i = 0; i < count; i++)
         {
-            var slot = manager.schedule.GetSlotOrDefault(i);
-            if (slot == null)
+            if (!manager.TryGetDestination(i, out var destination))
                 continue;
 
-            var view = Instantiate(slotViewPrefab, slotListRoot);
+            var view = Instantiate(destinationViewPrefab, destinationListRoot);
             view.gameObject.SetActive(true);
-            view.Configure(manager, i, slot);
-            _slotViews.Add(view);
+            view.Configure(manager, i, destination);
+            _destinationViews.Add(view);
         }
     }
 
-    void ClearSlots()
+    void ClearDestinations()
     {
-        for (int i = 0; i < _slotViews.Count; i++)
+        for (int i = 0; i < _destinationViews.Count; i++)
         {
-            if (_slotViews[i] != null)
-                Destroy(_slotViews[i].gameObject);
+            if (_destinationViews[i] != null)
+                Destroy(_destinationViews[i].gameObject);
         }
-        _slotViews.Clear();
+        _destinationViews.Clear();
     }
 
     void ToggleList()
@@ -168,14 +160,14 @@ public sealed class TimeLoopWatchUI : MonoBehaviour
     public void OpenList()
     {
         _isOpen = true;
-        if (slotListPanel != null)
-            slotListPanel.SetActive(true);
+        if (destinationListPanel != null)
+            destinationListPanel.SetActive(true);
     }
 
     public void CloseList()
     {
         _isOpen = false;
-        if (slotListPanel != null)
-            slotListPanel.SetActive(false);
+        if (destinationListPanel != null)
+            destinationListPanel.SetActive(false);
     }
 }
