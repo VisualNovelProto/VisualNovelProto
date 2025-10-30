@@ -73,5 +73,5 @@ public sealed class TimeLoopDestinationView : MonoBehaviour
     //    if (lockedGroup != null)
     //        lockedGroup.SetActive(false);
     //}
-    }
+    //}
 }
