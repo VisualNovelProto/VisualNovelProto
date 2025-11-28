@@ -6,6 +6,7 @@ public class Mapmanager : MonoBehaviour
     public class MapNode
     {
         public int id;
+        public string title;
         public string imageKey;
         public List<int> neighbors;
     }
@@ -13,14 +14,13 @@ public class Mapmanager : MonoBehaviour
     [SerializeField] private MapDefinition definition;
 
     private readonly Dictionary<int, MapNode> nodeTable = new Dictionary<int, MapNode>();
-    private readonly Stack<int> history = new Stack<int>();
-
     public int CurrentNodeId { get; private set; }
 
     void Awake()
     {
         BuildGraphFromDefinition(definition);
-        CurrentNodeId = Mathf.Clamp(definition.startNodeId, 0, Mathf.Max(0, (definition.nodes?.Length ?? 1) - 1));
+        int max = (definition.nodes?.Length ?? 1) - 1;
+        CurrentNodeId = Mathf.Clamp(definition.startNodeId, 0, Mathf.Max(0, max));
     }
 
     void BuildGraphFromDefinition(MapDefinition def)
@@ -33,6 +33,7 @@ public class Mapmanager : MonoBehaviour
             nodeTable[d.id] = new MapNode
             {
                 id = d.id,
+                title = d.title,
                 imageKey = d.imageKey,
                 neighbors = new List<int>(d.neighbors ?? new int[0])
             };
@@ -52,19 +53,7 @@ public class Mapmanager : MonoBehaviour
     public bool MoveTo(int targetId)
     {
         if (!CanMoveTo(targetId)) return false;
-        history.Push(CurrentNodeId);
         CurrentNodeId = targetId;
         return true;
     }
-
-    public bool CanBack() => history.Count > 0;
-
-    public bool Back()
-    {
-        if (!CanBack()) return false;
-        CurrentNodeId = history.Pop();
-        return true;
-    }
-
-    public int? PeekPrevNodeId() => history.Count > 0 ? history.Peek() : (int?)null;
 }
