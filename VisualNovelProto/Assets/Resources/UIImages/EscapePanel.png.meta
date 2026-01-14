@@ -1,0 +1,779 @@
+fileFormatVersion: 2
+guid: cd65a5a533ec5b541a8563587e35e06b
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 12
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: EscapePanel_0
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 197
+        width: 506
+        height: 734
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2bda0298e648b80449e18c9138df79f1
+      internalID: 184291587
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_1
+      rect:
+        serializedVersion: 2
+        x: 692
+        y: 860
+        width: 387
+        height: 88
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a52d776c1adc97e4cba62bf25421f521
+      internalID: 1997709418
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_2
+      rect:
+        serializedVersion: 2
+        x: 1349
+        y: 806
+        width: 158
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 777048b71401e73419fa971baa98b58c
+      internalID: 2138686365
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_3
+      rect:
+        serializedVersion: 2
+        x: 1631
+        y: 820
+        width: 131
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 402ddd917df59414c9bda997cc123c59
+      internalID: 1911802259
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_9
+      rect:
+        serializedVersion: 2
+        x: 1754
+        y: 822
+        width: 4
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3bb8003cbd9cef64ca32e71f1dc17cf6
+      internalID: -1054672287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_11
+      rect:
+        serializedVersion: 2
+        x: 944
+        y: 706
+        width: 158
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 79d312cd9168f0f44952757e9db5d95e
+      internalID: -473463201
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_12
+      rect:
+        serializedVersion: 2
+        x: 1364
+        y: 720
+        width: 127
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 62ac6915600a0d445ae23568d3259e62
+      internalID: 1609994292
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_13
+      rect:
+        serializedVersion: 2
+        x: 1645
+        y: 735
+        width: 98
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7391e3b88561531438a913ef487c2cd9
+      internalID: 1574176480
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_19
+      rect:
+        serializedVersion: 2
+        x: 959
+        y: 620
+        width: 127
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d61a5012f2c258246bdef651a77b54b0
+      internalID: -1264508414
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_20
+      rect:
+        serializedVersion: 2
+        x: 1381
+        y: 639
+        width: 93
+        height: 59
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6334e774593fe39468e5cd6bc888d835
+      internalID: 310959129
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_21
+      rect:
+        serializedVersion: 2
+        x: 1663
+        y: 656
+        width: 63
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 733cea3e5ea5fc04386f8bd66bf4b471
+      internalID: -203906201
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_23
+      rect:
+        serializedVersion: 2
+        x: 976
+        y: 539
+        width: 93
+        height: 59
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4383c73f387ffd4488c420bb3f482809
+      internalID: 1967119140
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_24
+      rect:
+        serializedVersion: 2
+        x: 1364
+        y: 554
+        width: 126
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d1182c4fddab01440a8318c0e5e99dbc
+      internalID: -1673822278
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_25
+      rect:
+        serializedVersion: 2
+        x: 1645
+        y: 569
+        width: 97
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1971a9aafb2f7ed409d8382f6d05f2f1
+      internalID: -1026920012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_32
+      rect:
+        serializedVersion: 2
+        x: 959
+        y: 454
+        width: 126
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cd8f082a66e76eb4181876742698d9e7
+      internalID: 605922949
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_33
+      rect:
+        serializedVersion: 2
+        x: 1331
+        y: 468
+        width: 193
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 45a76d9f0bde3ec44ac2344fab52b6bb
+      internalID: -309672582
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_34
+      rect:
+        serializedVersion: 2
+        x: 1612
+        y: 483
+        width: 165
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5a87f3f5a849c5d42a531c65f63b6286
+      internalID: -1088409850
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_44
+      rect:
+        serializedVersion: 2
+        x: 926
+        y: 368
+        width: 193
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7c9060b301509e647a4f8de6e883f962
+      internalID: 1014776198
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_45
+      rect:
+        serializedVersion: 2
+        x: 1382
+        y: 382
+        width: 92
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ad924e79c6b815f469432e5ebab373dc
+      internalID: 1813428379
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_46
+      rect:
+        serializedVersion: 2
+        x: 1663
+        y: 397
+        width: 63
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 34ae696ff289ee84d8630277cdbdf8be
+      internalID: 1127381821
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_51
+      rect:
+        serializedVersion: 2
+        x: 977
+        y: 282
+        width: 92
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5b147f4c42f9be747adfe53ef66c3266
+      internalID: 23750737
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_52
+      rect:
+        serializedVersion: 2
+        x: 1382
+        y: 296
+        width: 92
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b42c044237444304399b4aafbff49c00
+      internalID: -1991873688
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_53
+      rect:
+        serializedVersion: 2
+        x: 1664
+        y: 310
+        width: 61
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b093f3addee75ab4ba8abd3ce1929da2
+      internalID: -732237053
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_56
+      rect:
+        serializedVersion: 2
+        x: 977
+        y: 196
+        width: 92
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c960cecdddd52a1418a2d429e21bb12e
+      internalID: -549301662
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_57
+      rect:
+        serializedVersion: 2
+        x: 1347
+        y: 210
+        width: 160
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e33d8c622593fd14ab26c4f3acdd30ed
+      internalID: -1183523572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_58
+      rect:
+        serializedVersion: 2
+        x: 1629
+        y: 225
+        width: 130
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 60f9f6ed88cc2ee498bd6f93cb98715f
+      internalID: -1682374425
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_59
+      rect:
+        serializedVersion: 2
+        x: 1653
+        y: 226
+        width: 4
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 875f0da9745979a4594ffbca59fa449e
+      internalID: -1724107877
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EscapePanel_67
+      rect:
+        serializedVersion: 2
+        x: 942
+        y: 110
+        width: 160
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bd141b99ce96e114585d38aa7104bfd1
+      internalID: 276336573
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      EscapePanel_50: 1596167616
+      EscapePanel_32: 605922949
+      EscapePanel_21: -203906201
+      EscapePanel_25: -1026920012
+      EscapePanel_19: -1264508414
+      EscapePanel_56: -549301662
+      EscapePanel_7: 687600993
+      EscapePanel_22: 857947351
+      EscapePanel_30: -1779643123
+      EscapePanel_14: 271158395
+      EscapePanel_58: -1682374425
+      EscapePanel_6: -811017799
+      EscapePanel_23: 1967119140
+      EscapePanel_44: 1014776198
+      EscapePanel_1: 1997709418
+      EscapePanel_13: 1574176480
+      EscapePanel_29: -594252499
+      EscapePanel_12: 1609994292
+      EscapePanel_9: -1054672287
+      EscapePanel_5: 551356838
+      EscapePanel_15: 1047670225
+      EscapePanel_39: 127250783
+      EscapePanel_51: 23750737
+      EscapePanel_41: -1639647002
+      EscapePanel_46: 1127381821
+      EscapePanel_54: -91910064
+      EscapePanel_55: 1788318587
+      EscapePanel_60: -1353465378
+      EscapePanel_47: 508006301
+      EscapePanel_35: 1983618565
+      EscapePanel_17: -987397131
+      EscapePanel_66: 1090055830
+      EscapePanel_28: 2024434319
+      EscapePanel_34: -1088409850
+      EscapePanel_49: -1084791603
+      EscapePanel_53: -732237053
+      EscapePanel_64: -1059080623
+      EscapePanel_48: 665179181
+      EscapePanel_62: -1284397990
+      EscapePanel_67: 276336573
+      EscapePanel_45: 1813428379
+      EscapePanel_20: 310959129
+      EscapePanel_18: 2048261939
+      EscapePanel_33: -309672582
+      EscapePanel_11: -473463201
+      EscapePanel_59: -1724107877
+      EscapePanel_31: 41942472
+      EscapePanel_38: 475430674
+      EscapePanel_57: -1183523572
+      EscapePanel_16: 253125242
+      EscapePanel_52: -1991873688
+      EscapePanel_61: -524569421
+      EscapePanel_10: 425971836
+      EscapePanel_36: 1540792607
+      EscapePanel_3: 1911802259
+      EscapePanel_42: 883728482
+      EscapePanel_65: -1059332171
+      EscapePanel_63: -1733795748
+      EscapePanel_0: 184291587
+      EscapePanel_8: 1113507813
+      EscapePanel_4: 1621612278
+      EscapePanel_37: 90508792
+      EscapePanel_2: 2138686365
+      EscapePanel_43: -1264236594
+      EscapePanel_40: 775556095
+      EscapePanel_26: -1118890914
+      EscapePanel_24: -1673822278
+      EscapePanel_27: -171147513
+  spritePackingTag: 
+  pSDRemoveMatte: 0
+  pSDShowRemoveMatteOption: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

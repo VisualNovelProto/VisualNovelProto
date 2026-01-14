@@ -1,6 +1,6 @@
 ﻿Index,nodeId,rowType,speaker,text,voice,actors,bgm,sfx,cg,transition,advancePolicy,nextNodeId,choiceLabel,choiceGoto,choiceSet,flagsSet,flagsReq,timeLoopKnowledge
-ChapterZero,0,Node,나레이션,최종보스의 침실에는 긴 밤을 버틴 빛이 잔잔히 깔려 있었다.,,OldMan@C(in=fade),SleeplessDrone,,,FadeIn,WaitInput,1,,,,,,
-ChapterZero,1,Node,나레이션,전자시계 숫자는 03:17을 가리켰고 초 단위로 미세하게 흔들렸다.,,OldMan@C,SleeplessDrone,SFX_Watch,,Cut,WaitInput,2,,,,,,
+ChapterZero,0,Node,나레이션,최종보스의 침실에는 긴 밤을 버틴 빛이 잔잔히 깔려 있었다.,,OldMan@C(in=fade),SleeplessDrone,,Black,FadeIn,WaitInput,1,,,,,,
+ChapterZero,1,Node,나레이션,전자시계 숫자는 03:17을 가리켰고 초 단위로 미세하게 흔들렸다.,,OldMan@C,SleeplessDrone,SFX_Watch,test1,Cut,WaitInput,2,,,,,,
 ChapterZero,2,Node,최종보스,또다시 잠이 달아나버렸군.,,OldMan@C,SleeplessDrone,,,Cut,WaitInput,3,,,,,,
 ChapterZero,3,Node,나레이션,그는 베개를 들어 뒤집어 보지만 차가운 감촉은 집중을 돕지 못했다.,,OldMan@C,SleeplessDrone,,,Cut,WaitInput,4,,,,,,
 ChapterZero,4,Node,나레이션,천장에 비친 반사광이 세 개의 레이어로 겹치며 그의 시야를 찔렀다.,,OldMan@C,SleeplessDrone,,,Cut,WaitInput,5,,,,,,
